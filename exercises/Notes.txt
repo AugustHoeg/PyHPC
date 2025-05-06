@@ -1,0 +1,1 @@
+Helpful documentation on batch job scripts: https://www.hpc.dtu.dk/?page_id=1416

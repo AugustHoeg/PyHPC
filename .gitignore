@@ -4,6 +4,9 @@
 
 __pycache__/
 
+exercises/batch_errors/**
+exercises/batch_outputs/**
+
 batch_errors/**
 batch_outputs/**
 batch_jobs/**
@@ -14,6 +17,19 @@ old_versions/
 
 figures/**
 results/**
+
+**/**/*.zip
+**/*.zip
+
+**/**/*.csv
+**/*.csv
+
+**/**/*.parquet
+**/*.parquet
+
+
+**/*.npy
+*.npy
 
 **/*.zarr
 *.zarr
