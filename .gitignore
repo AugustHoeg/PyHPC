@@ -18,6 +18,8 @@ old_versions/
 figures/**
 results/**
 
+.zarr
+
 **/**/*.zip
 **/*.zip
 
