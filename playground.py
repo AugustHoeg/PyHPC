@@ -1,8 +1,25 @@
+from time import perf_counter as time
 import zarr
 import numpy as np
 
 from ome_zarr.io import parse_url
 from ome_zarr.writer import write_image
+from ome_zarr.reader import Reader
+
+def get_ome_data(file_path, directory=None, level=0):
+    # Reading using ome-zarr reader
+    if directory is not None:
+        data_path = file_path + "/" + directory
+    reader = Reader(parse_url(data_path, mode="r"))
+    # nodes may include images, labels etc
+    nodes = list(reader())
+    print("nodes: \n", nodes)
+    # first node will be the image pixel data
+    image_node = nodes[level]
+    dask_data = image_node.data
+    return dask_data
+
+
 
 def playground_01():
     # Create a Zarr array in write mode
@@ -41,5 +58,30 @@ if __name__ == "__main__":
 
     print(root.info)  # Print the metadata of the Zarr group
     print(root.tree())  # Print the structure of the Zarr group
+
+    # Reading directly using zarr:
+    root = zarr.open(file_path, mode="r")
+
+    # Access multiscale image levels
+    level_0 = root['volume']['0']
+    level_1 = root['volume']['1']
+    level_2 = root['volume']['2']
+
+    data = get_ome_data(file_path, directory='volume', level=0)
+
+    patch_size = (64, 64, 64)
+    valid_range = np.array(level_0.shape) - patch_size
+
+    start_time = time()
+    for i in range(100):
+        if i % 10 == 0:
+            print("Reading patch ", i)
+        # randomly sample a patch
+        crop_start = np.random.randint(0, np.array(level_0.shape) - patch_size)
+        crop_end = crop_start + patch_size
+
+        patch = level_0[crop_start[0]:crop_end[0], crop_start[1]:crop_end[1], crop_start[2]:crop_end[2]]
+        #patch = data[0][crop_start[0]:crop_end[0], crop_start[1]:crop_end[1], crop_start[2]:crop_end[2]].compute()
+    print(f"Time taken {time() - start_time} sec.")
 
     print("Done")

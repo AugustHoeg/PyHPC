@@ -25,10 +25,12 @@ for i in range(2):
 image_group = root.create_group("volume")
 
 # Define storage options for each level
+# Compressions: LZ4(), Zstd(level=3)
+
 storage_opts = [
-        {"chunks": (256, 256, 256), "compression": Zstd(level=5)},
-        {"chunks": (128, 128, 128), "compression": Zstd(level=3)},
-        {"chunks": (64, 64, 64), "compression": Zstd(level=1)},
+        {"chunks": (256, 256, 256), "compression": LZ4()},
+        {"chunks": (128, 128, 128), "compression": LZ4()},
+        {"chunks": (64, 64, 64), "compression": LZ4()},
 ]
 
 # Write the image data to the Zarr group
