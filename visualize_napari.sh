@@ -1,6 +1,7 @@
 #!/bin/bash
 
 OME_ZARR_FILE="ome_array.zarr"
+# add the group at the end like this: ome_array.zarr/group
 
 echo "INFO: Starting napari visualization of $OME_ZARR_FILE"
 
