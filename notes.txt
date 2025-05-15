@@ -1,0 +1,1 @@
+https://neubias.github.io/training-resources/ome_zarr/index.html?id_activity_platform-1=export-ome-zarr-from-python-using-ome-zarr-py-activity-1&id_activity_platform-0=open-ome-zarr-in-napari-activity-0

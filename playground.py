@@ -71,17 +71,20 @@ if __name__ == "__main__":
 
     patch_size = (64, 64, 64)
     valid_range = np.array(level_0.shape) - patch_size
+    no_samples = 100
 
     start_time = time()
-    for i in range(100):
+    for i in range(no_samples):
         if i % 10 == 0:
             print("Reading patch ", i)
         # randomly sample a patch
-        crop_start = np.random.randint(0, np.array(level_0.shape) - patch_size)
+        crop_start = np.random.randint(0, np.array(level_0.shape) - patch_size)  #  (0,0,0)
         crop_end = crop_start + patch_size
 
         patch = level_0[crop_start[0]:crop_end[0], crop_start[1]:crop_end[1], crop_start[2]:crop_end[2]]
         #patch = data[0][crop_start[0]:crop_end[0], crop_start[1]:crop_end[1], crop_start[2]:crop_end[2]].compute()
-    print(f"Time taken {time() - start_time} sec.")
+    time_elapsed = time() - start_time
+    print(f"Time taken {time_elapsed} sec.")
+    print(f"Time taken per patch {time_elapsed / no_samples} sec. (average)")
 
     print("Done")
