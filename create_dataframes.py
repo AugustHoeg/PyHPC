@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 # Define base paths for WSL
-base_path = Path("/mnt/c/Users/ralbe/OneDrive - Danmarks Tekniske Universitet/Documents/Project_with_August/Data/CirrMRI600+")
+base_path = Path("/home/ralbe/Data/CirrMRI600+")
 
 # Read demographic data
 healthy_df = pd.read_csv(base_path / "Healthy_demographics.csv")
