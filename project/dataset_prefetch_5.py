@@ -1,5 +1,6 @@
 import os
 import queue
+from tqdm import tqdm
 import sys
 import random
 import numpy as np
@@ -228,10 +229,11 @@ def main():
 
     start_time = time()
     for i in range(no_epochs):
-        for batch in dataloader:
-            print("Loaded batch...")
-            #for key in batch.keys():
-            #    print(f"Key: {key}, Shape: {batch[key].shape}")
+        for batch in tqdm(dataloader, desc='Reconstructing patches', mininterval=2):
+            pass
+            # print("Loaded batch...")
+            # for key in batch.keys():
+            #     print(f"Key: {key}, Shape: {batch[key].shape}")
 
     time_elapsed = time() - start_time
     print(f"Time taken {time_elapsed} sec.")
