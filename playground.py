@@ -63,14 +63,14 @@ if __name__ == "__main__":
     root = zarr.open(file_path, mode="r")
 
     # Access multiscale image levels
-    level_0 = root['volume']['0']
-    level_1 = root['volume']['1']
-    level_2 = root['volume']['2']
+    level0 = root['volume']['0']
+    level1 = root['volume']['1']
+    level2 = root['volume']['2']
 
     data = get_ome_data(file_path, directory='volume', level=0)
 
     patch_size = (64, 64, 64)
-    valid_range = np.array(level_0.shape) - patch_size
+    valid_range = np.array(level0.shape) - patch_size
     no_samples = 100
 
     start_time = time()
@@ -78,10 +78,10 @@ if __name__ == "__main__":
         if i % 10 == 0:
             print("Reading patch ", i)
         # randomly sample a patch
-        crop_start = np.random.randint(0, np.array(level_0.shape) - patch_size)  #  (0,0,0)
+        crop_start = np.random.randint(0, np.array(level0.shape) - patch_size)  #  (0,0,0)
         crop_end = crop_start + patch_size
 
-        patch = level_0[crop_start[0]:crop_end[0], crop_start[1]:crop_end[1], crop_start[2]:crop_end[2]]
+        patch = level0[crop_start[0]:crop_end[0], crop_start[1]:crop_end[1], crop_start[2]:crop_end[2]]
         #patch = data[0][crop_start[0]:crop_end[0], crop_start[1]:crop_end[1], crop_start[2]:crop_end[2]].compute()
     time_elapsed = time() - start_time
     print(f"Time taken {time_elapsed} sec.")
