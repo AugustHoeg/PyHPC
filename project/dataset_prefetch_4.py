@@ -1,5 +1,6 @@
 import os
 import sys
+import random
 import numpy as np
 import torch
 import monai
@@ -8,9 +9,9 @@ from ome_zarr.io import parse_url
 from monai.data import SmartCacheDataset, DataLoader
 from time import sleep
 from time import perf_counter as time
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Event
 
-class ZarrProducer():
+class ZarrProducer(Process):
     def __init__(self, zarr_data, patch_shape, patch_transform, queue_size: int = 64, num_workers: int = 1):
         super().__init__()
 
@@ -23,22 +24,17 @@ class ZarrProducer():
         self.queue = Queue(maxsize=queue_size)
         self.num_workers = num_workers
         self.workers = []
+        self.stop_event = Event()  # Event to signal workers to stop
 
 
     def _worker_process(self):
 
-        while True:
-            if self.queue.full():
-                 # Wait until the queue is not full
-                 sleep(0.1)  # sleep for a bit
-                 continue
-
-            for z in self.zarr_data:
-                patch = self._extract_patch(z, self.patch_shape)
-                if self.patch_transform:
-                    patch = self.patch_transform(patch)
-                self.queue.put(patch)
-                #print("Produced patch, queue size: ", self.queue.qsize())
+        while not self.stop_event.is_set():
+            z = random.choice(self.zarr_data)  # Randomly select a zarr dataset
+            patch = self._extract_patch(z, self.patch_shape)
+            if self.patch_transform:
+                patch = self.patch_transform(patch)
+            self.queue.put(patch, block=True)  # block until space is available
 
 
     def _extract_patch(self, data, patch_size=(32, 32, 32)):
@@ -69,9 +65,9 @@ class ZarrProducer():
 
 
     def stop_workers(self):
-        # Stop the worker processes
+        # Stop the worker processes by setting stop event
+        self.stop_event.set()
         for worker in self.workers:
-            worker.terminate()
             worker.join()
 
 
@@ -94,7 +90,7 @@ class ZarrDataset(monai.data.Dataset):
 
         self.zarr_data = []
         for path in paths:
-            self.zarr_data.append(zarr.open(path, mode='r'))
+            self.zarr_data.append(zarr.open(path, mode='r', cache_attrs=True))
 
             store = parse_url(path, mode="r").store
             root = zarr.group(store=store)
@@ -113,7 +109,7 @@ class ZarrDataset(monai.data.Dataset):
         self._init_producers()
 
 
-    def _init_producers(self, queue_size: int = 64):
+    def _init_producers(self):
         # Start worker processes
         self.producers = []
         for i in range(self.num_producers):
@@ -137,24 +133,18 @@ class ZarrDataset(monai.data.Dataset):
     def stop_producers(self):
         # Stop the producer processes
         for producer in self.producers:
-            for worker in producer.workers:
-                worker.terminate()
-                worker.join()
+            producer.stop_workers()
 
 
     def __getitem__(self, index):
 
-        # search for a non-empty queue
-        i = 0
         while True:
             for producer in self.producers:
-                if not producer.queue.empty():
-                    patch = producer.queue.get()
+                if producer.queue.empty():
+                    continue
+                else:
+                    patch = producer.queue.get(timeout=0.1)
                     return patch
-            i += 1
-            if i % 500 == 0:
-                print("All queues are empty...")
-                i = 0
 
     # def __getitem__(self, index):
     #
