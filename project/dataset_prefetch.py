@@ -122,7 +122,7 @@ def main():
     torch.manual_seed(seed)
     np.random.seed(seed)
 
-    dataset = ZarrDataset(opt, paths, transform, num_workers=2, cache_size=64)
+    dataset = ZarrDataset(opt, paths, transform, num_workers=2, cache_size=128)
 
     num_workers = 0
     persistent_workers = True if num_workers > 0 else False
