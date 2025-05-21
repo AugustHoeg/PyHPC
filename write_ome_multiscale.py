@@ -7,6 +7,7 @@ from ome_zarr.io import parse_url
 from numcodecs import Zstd, Blosc, LZ4
 from skimage.transform import downscale_local_mean
 
+
 # Create/open a Zarr array in write mode
 file_path = "ome_array_pyramid.zarr"
 
@@ -28,9 +29,9 @@ image_group = root.create_group("volume")
 # Compressions: LZ4(), Zstd(level=3)
 
 storage_opts = [
-        {"chunks": (256, 256, 256), "compression": LZ4()},
-        {"chunks": (128, 128, 128), "compression": LZ4()},
-        {"chunks": (64, 64, 64), "compression": LZ4()},
+        {"chunks": (256, 256, 256), "compression": Blosc(cname='lz4', clevel=3, shuffle=Blosc.BITSHUFFLE)},  # Blosc(cname='lz4', clevel=3, shuffle=Blosc.BITSHUFFLE)
+        {"chunks": (128, 128, 128), "compression": Blosc(cname='lz4', clevel=3, shuffle=Blosc.BITSHUFFLE)},  #
+        {"chunks": (64, 64, 64), "compression": Blosc(cname='lz4', clevel=3, shuffle=Blosc.BITSHUFFLE)},
 ]
 
 # Write the image data to the Zarr group

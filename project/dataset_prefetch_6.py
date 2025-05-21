@@ -8,6 +8,7 @@ import torch
 import monai.data
 import monai.transforms as mt
 import zarr
+from zarr.storage import LRUStoreCache, FSStore
 from ome_zarr.io import parse_url
 from monai.data import SmartCacheDataset, DataLoader
 from time import sleep
@@ -108,7 +109,7 @@ class ZarrProducer():
 
 
 class ZarrDataset(monai.data.Dataset):
-    def __init__(self, ome_levels, paths, patch_shape, patch_transform, num_producers: int = 1, num_workers: int = 1, queue_size: int = 64, base_seed=8338):
+    def __init__(self, ome_levels, paths, patch_shape, patch_transform, num_producers: int = 1, num_workers: int = 1, queue_size: int = 64, base_seed=8338, use_LRU_cache=False):
 
         self.ome_levels = ome_levels  # Number of levels in the Zarr dataset
         self.paths = paths
@@ -128,7 +129,12 @@ class ZarrDataset(monai.data.Dataset):
 
         self.zarr_data = []
         for path in paths:
-            self.zarr_data.append(zarr.open(path, mode='r', cache_attrs=True))
+            if use_LRU_cache:
+                store_size = 2**28  # 256 MB
+                cached_store = LRUStoreCache(FSStore(path), max_size=store_size)
+                self.zarr_data.append(zarr.open(store=cached_store, mode='r', cache_attrs=True))
+            else:
+                self.zarr_data.append(zarr.open(path, mode='r', cache_attrs=True))
 
             store = parse_url(path, mode="r").store
             root = zarr.group(store=store)
@@ -214,7 +220,7 @@ def main():
         mt.RandFlipd(keys=ome_levels, prob=0.5, spatial_axis=[0, 1, 2]),
     ])
 
-    dataset = ZarrDataset(ome_levels, paths, patch_shape, patch_transform, num_producers=8, num_workers=4, queue_size=128)
+    dataset = ZarrDataset(ome_levels, paths, patch_shape, patch_transform, num_producers=8, num_workers=1, queue_size=32, use_LRU_cache=False)
 
     num_workers = 0
     persistent_workers = True if num_workers > 0 else False
@@ -225,7 +231,7 @@ def main():
                             pin_memory=False,
                             persistent_workers=persistent_workers)
 
-    no_epochs = 200
+    no_epochs = 10
 
     start_time = time()
     for i in range(no_epochs):
