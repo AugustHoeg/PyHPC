@@ -37,7 +37,7 @@ class ZarrProducer():
     def _worker_process(self, id):
 
         self.set_random_seed(self.seed + id)  # Set random seed for each worker
-        print("Worker seed set to: ", self.seed + id)
+        # print("Worker seed set to: ", self.seed + id)
 
         while not self.stop_event.is_set():
             z = random.choice(self.zarr_data)  # Randomly select a zarr dataset
