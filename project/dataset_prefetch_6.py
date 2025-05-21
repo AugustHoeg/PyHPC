@@ -231,7 +231,7 @@ def main():
                             pin_memory=False,
                             persistent_workers=persistent_workers)
 
-    no_epochs = 5000
+    no_epochs = 1000
 
     start_time = time()
     for i in range(no_epochs):
