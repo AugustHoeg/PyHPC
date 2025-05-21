@@ -220,7 +220,7 @@ def main():
         mt.RandFlipd(keys=ome_levels, prob=0.5, spatial_axis=[0, 1, 2]),
     ])
 
-    dataset = ZarrDataset(ome_levels, paths, patch_shape, patch_transform, num_producers=8, num_workers=1, queue_size=32, use_LRU_cache=False)
+    dataset = ZarrDataset(ome_levels, paths, patch_shape, patch_transform, num_producers=8, num_workers=16, queue_size=256, use_LRU_cache=False)
 
     num_workers = 0
     persistent_workers = True if num_workers > 0 else False
