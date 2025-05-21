@@ -14,8 +14,9 @@ from time import perf_counter as time
 from multiprocessing import Process, Queue, Event
 
 
+
 class ZarrProducer():
-    def __init__(self, zarr_data, ome_levels, patch_shape, patch_transform, queue_size: int = 64, num_workers: int = 1):
+    def __init__(self, zarr_data, ome_levels, patch_shape, patch_transform, queue_size: int = 64, num_workers: int = 1, seed=8338):
         super().__init__()
 
         # Define data
@@ -31,7 +32,12 @@ class ZarrProducer():
 
         self.ome_levels = ome_levels  # levels in the OME-Zarr dataset
 
-    def _worker_process(self):
+        self.seed = seed
+
+    def _worker_process(self, id):
+
+        self.set_random_seed(self.seed + id)  # Set random seed for each worker
+        print("Worker seed set to: ", self.seed + id)
 
         while not self.stop_event.is_set():
             z = random.choice(self.zarr_data)  # Randomly select a zarr dataset
@@ -71,8 +77,8 @@ class ZarrProducer():
 
     def set_workers(self):
 
-        for _ in range(self.num_workers):
-            worker = Process(target=self._worker_process)
+        for id in range(self.num_workers):
+            worker = Process(target=self._worker_process, args=(id,))
             worker.daemon = True
             self.workers.append(worker)
 
@@ -89,9 +95,19 @@ class ZarrProducer():
         for worker in self.workers:
             worker.join(timeout=2)
 
+    def set_random_seed(self, seed):
+        if seed is None:
+            seed = random.randint(1, 10000)
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        monai.utils.misc.set_determinism(seed)
+        np.random.RandomState(seed)
+
 
 class ZarrDataset(monai.data.Dataset):
-    def __init__(self, ome_levels, paths, patch_shape, patch_transform, num_producers: int = 1, num_workers: int = 1, queue_size: int = 64):
+    def __init__(self, ome_levels, paths, patch_shape, patch_transform, num_producers: int = 1, num_workers: int = 1, queue_size: int = 64, base_seed=8338):
 
         self.ome_levels = ome_levels  # Number of levels in the Zarr dataset
         self.paths = paths
@@ -100,6 +116,7 @@ class ZarrDataset(monai.data.Dataset):
         self.num_producers = num_producers
         self.num_workers = num_workers  # Number of worker processes per queue
         self.queue_size = queue_size
+        self.base_seed = base_seed
 
         super().__init__(paths, patch_transform)
 
@@ -130,15 +147,17 @@ class ZarrDataset(monai.data.Dataset):
         self._init_producers()
 
     def _init_producers(self):
+
         # Start worker processes
         self.producers = []
-        for i in range(self.num_producers):
+        for id in range(self.num_producers):
             producer = ZarrProducer(self.zarr_data,
                                     ome_levels=self.ome_levels,
                                     patch_shape=self.patch_shape,
                                     patch_transform=self.patch_transform,
                                     queue_size=self.queue_size,
-                                    num_workers=self.num_workers)
+                                    num_workers=self.num_workers,
+                                    seed=self.base_seed + id*self.num_workers)  # Use a different seed for each producer
             self.producers.append(producer)
 
             producer.set_workers()
