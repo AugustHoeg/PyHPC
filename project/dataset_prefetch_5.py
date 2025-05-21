@@ -1,9 +1,11 @@
 import os
+import queue
 import sys
 import random
 import numpy as np
 import torch
-import monai
+import monai.data
+import monai.transforms as mt
 import zarr
 from ome_zarr.io import parse_url
 from monai.data import SmartCacheDataset, DataLoader
@@ -36,33 +38,34 @@ class ZarrProducer():
             patch = self._extract_patch_levels(z, self.patch_shape)
             if self.patch_transform:
                 patch = self.patch_transform(patch)
-            self.queue.put(patch, block=True)  # block until space is available
+            try:
+                self.queue.put(patch, timeout=0.1)  # block for time out space is available
+            except queue.Full:
+                continue
 
-    # def _extract_patch(self, data, patch_size=(32, 32, 32)):
-    #
-    #     # We start with the first level
-    #     volume = data['volume'][self.ome_levels[0]]
-    #     start = np.random.randint(0, np.array(volume.shape) - patch_size)  # (0,0,0)
-    #     end = start + patch_size
-    #
-    #     patch = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
-    #     out_dict = {self.ome_levels[0]: patch}
-    #     return out_dict
+    def _extract_patch(self, data, patch_size=(32, 32, 32)):
+
+        # We start with the first level
+        volume = data['volume'][self.ome_levels[0]]
+        start = np.random.randint(0, np.array(volume.shape) - patch_size)  # (0,0,0)
+        end = start + patch_size
+
+        patch = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+        out_dict = {self.ome_levels[0]: patch}
+        return out_dict
 
     def _extract_patch_levels(self, data, patch_size=(32, 32, 32)):
 
         volume = data['volume'][self.ome_levels[-1]]
         start = np.random.randint(0, np.array(volume.shape) - patch_size)
         end = start + patch_size
-        patch = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
-        out_dict = {self.ome_levels[0]: patch}
+        out_dict = {self.ome_levels[-1]: volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]}
 
-        for i in range(0, len(self.ome_levels) - 1):
+        for i in range(len(self.ome_levels) - 2, -1, -1):  # reverse order
             volume = data['volume'][self.ome_levels[i]]
-            start *= 2
-            end *= 2
-            patch = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
-            out_dict[self.ome_levels[i]] = patch
+            start = start * 2
+            end = end * 2
+            out_dict[self.ome_levels[i]] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
 
         return out_dict
 
@@ -84,13 +87,13 @@ class ZarrProducer():
         # Stop the worker processes by setting stop event
         self.stop_event.set()
         for worker in self.workers:
-            worker.terminate()  # unsafe, but fast
-            #worker.join()
+            worker.join(timeout=2)
 
 
 class ZarrDataset(monai.data.Dataset):
-    def __init__(self, opt, paths, patch_shape, patch_transform, num_producers: int = 1, num_workers: int = 1, queue_size: int = 64):
-        self.opt = opt
+    def __init__(self, ome_levels, paths, patch_shape, patch_transform, num_producers: int = 1, num_workers: int = 1, queue_size: int = 64):
+
+        self.ome_levels = ome_levels  # Number of levels in the Zarr dataset
         self.paths = paths
         self.patch_shape = patch_shape
         self.patch_transform = patch_transform
@@ -115,11 +118,12 @@ class ZarrDataset(monai.data.Dataset):
             print(root.info)  # Print the metadata of the Zarr group
             print(root.tree())  # Print the structure of the Zarr group
 
-        self.ome_levels = ('0')  # Number of levels in the Zarr dataset
-
         # Estimated RAM usage
+        usage = 0.0
         bytes_per_ele = 4  # Assuming float32
-        usage = np.prod(self.patch_shape) * num_producers * num_workers * queue_size * bytes_per_ele / 1024 / 1024  # in MB
+        for level in range(len(ome_levels)):
+            shape = np.array(self.patch_shape) * (2**level)
+            usage += (np.prod(shape) * bytes_per_ele / 1024**2) * num_producers * queue_size  # in MB
         print(f"Estimated RAM usage: {usage:.2f} MB")
 
         # Start producer processes
@@ -169,17 +173,28 @@ class ZarrDataset(monai.data.Dataset):
 def main():
 
     # Example usage
-    opt = None
     batch_size = 8
-    patch_shape = (64, 64, 64)
+    patch_shape = (32, 32, 32)
+
+    ome_levels = ['0', '1', '2']
     paths = ["../ome_array_pyramid.zarr"] * batch_size
-    transform = None  # monai.transforms.Identityd(keys=[], allow_missing_keys=True)  # Define your transformation here
 
     seed = 8883
     torch.manual_seed(seed)
     np.random.seed(seed)
 
-    dataset = ZarrDataset(opt, paths, patch_shape, transform, num_producers=8, num_workers=1, queue_size=32)
+    # Define patch transforms
+
+    patch_transform = mt.Compose([
+        #mt.Identityd(keys=ome_levels, allow_missing_keys=True),
+        mt.EnsureChannelFirstd(keys=ome_levels, channel_dim='no_channel'),
+        mt.SignalFillEmptyd(keys=ome_levels, replacement=0),  # Remove any NaNs
+        mt.ScaleIntensityd(keys=ome_levels, minv=0.0, maxv=1.0),
+        #mt.Rand3DElasticd(keys=ome_levels, prob=0.5, sigma_range=(5, 10), magnitude_range=(0.1, 0.2), mode='bilinear'),
+        mt.RandFlipd(keys=ome_levels, prob=0.5, spatial_axis=[0, 1, 2]),
+    ])
+
+    dataset = ZarrDataset(ome_levels, paths, patch_shape, patch_transform, num_producers=8, num_workers=1, queue_size=32)
 
     num_workers = 0
     persistent_workers = True if num_workers > 0 else False
@@ -199,8 +214,6 @@ def main():
             #for key in batch.keys():
             #    print(f"Key: {key}, Shape: {batch[key].shape}")
 
-            # for key in batch.keys():
-            #    print(f"Key: {key}, Shape: {batch[key].shape}")
     time_elapsed = time() - start_time
     print(f"Time taken {time_elapsed} sec.")
     print(f"Time taken per patch {time_elapsed / no_epochs / batch_size} sec. (average)")
