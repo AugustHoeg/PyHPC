@@ -7,6 +7,7 @@ from dask.diagnostics import ProgressBar
 from dask.distributed import Client, LocalCluster
 import zarr
 import numcodecs
+from numcodecs import Blosc
 
 
 def load_and_crop_slice(hdf5_path, dataset_name, z_idx, crop_bounds, dtype=np.float16):
@@ -127,14 +128,25 @@ def hdf5_to_zarr(
     if compressor is None:
         compressor = numcodecs.Blosc(cname="lz4", clevel=3, shuffle=numcodecs.Blosc.SHUFFLE)
 
-    # Set encoding: apply chunks and compressor
-    encoding = {"": {
-        "chunks": output_chunks,
-        "compressor": compressor
-    }}
+    # # Set encoding: apply chunks and compressor
+    # encoding = {"": {
+    #     "chunks": output_chunks,
+    #     "compressor": compressor
+    # }}
+
+    # # Create/open a Zarr array in write mode
+    # file_path = "ome_array_pyramid.zarr"
+    #
+    # store = parse_url(file_path, mode="w").store
+    # root = zarr.group(store=store)
+    #
+    # # Create image group for the volume
+    # image_group = root.create_group("volume")
+
+    storage_opts = {"chunks": output_chunks, "compression": Blosc(cname='lz4', clevel=3, shuffle=Blosc.BITSHUFFLE)}
 
     with ProgressBar():
-        normalized.to_zarr(zarr_path, overwrite=True, encoding=encoding)
+        normalized.to_zarr(zarr_path, overwrite=True, storage_options=storage_opts)
 
     print("Conversion complete.")
     if use_dask_cluster:
