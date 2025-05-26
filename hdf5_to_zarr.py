@@ -6,9 +6,10 @@ from dask import delayed
 from dask.diagnostics import ProgressBar
 from dask.distributed import Client, LocalCluster
 import zarr
+from ome_zarr.writer import write_image
+from ome_zarr.io import parse_url
 import numcodecs
 from numcodecs import Blosc
-
 
 def load_and_crop_slice(hdf5_path, dataset_name, z_idx, crop_bounds, dtype=np.float16):
     """Helper to load and crop a single slice (z-index) from HDF5."""
@@ -125,24 +126,6 @@ def hdf5_to_zarr(
 
     # Step 5: Write to Zarr with direct output chunking + compression
     print(f"Saving to Zarr at {zarr_path} with chunks={output_chunks}...")
-    # if compressor is None:
-    #     compressor = numcodecs.Blosc(cname="lz4", clevel=3, shuffle=numcodecs.Blosc.SHUFFLE)
-
-    # # Set encoding: apply chunks and compressor
-    # encoding = {"": {
-    #     "chunks": output_chunks,
-    #     "compressor": compressor
-    # }}
-
-    # # Create/open a Zarr array in write mode
-    # file_path = "ome_array_pyramid.zarr"
-    #
-    # store = parse_url(file_path, mode="w").store
-    # root = zarr.group(store=store)
-    #
-    # # Create image group for the volume
-    # image_group = root.create_group("volume")
-
     storage_opts = {"chunks": output_chunks, "compression": Blosc(cname='lz4', clevel=3, shuffle=Blosc.BITSHUFFLE)}
 
     with ProgressBar():
@@ -155,6 +138,63 @@ def hdf5_to_zarr(
         cluster.close()
 
 
+def hdf5_to_ome(
+    hdf5_path,
+    hdf5_dataset_name,
+    zarr_path,
+    output_chunks=(256, 256, 256),
+    compressor=None,
+    dtype=np.float16,
+    global_min=None,
+    global_max=None,
+    use_dask_cluster=True,  # Use Dask cluster for multiprocessing
+):
+    # Step 0: Get HDF5 shape
+    with h5py.File(hdf5_path, 'r') as f:
+        d, h, w = f[hdf5_dataset_name].shape
+        print(f"HDF5 shape: (D={d}, H={h}, W={w})")
+
+    if use_dask_cluster:
+        print("Using Dask cluster for multiprocessing...")
+        # Step 1: Start Dask cluster (multiprocessing)
+        cluster = LocalCluster(processes=True)
+        client = Client(cluster)
+
+    data = h5py.File(hdf5_path, 'r')[hdf5_dataset_name]
+    volume = da.from_array(data, chunks=(1, h, w))
+
+    if global_min is None or global_max is None:
+        # Step 3: Compute global min/max
+        print("Computing global min/max...")
+        with ProgressBar():
+            global_min = volume.min().compute()
+            global_max = volume.max().compute()
+        print(f"Global min: {global_min}, max: {global_max}")
+
+    # Step 4: Normalize
+    normalized = (volume - global_min) / (global_max - global_min)
+    normalized = normalized.astype(np.float16)
+
+    # Step 5: Write to Zarr with direct output chunking + compression
+    print(f"Saving to Zarr at {zarr_path} with chunks={output_chunks}...")
+
+    # Open target Zarr group
+    store = parse_url(zarr_path, mode="w").store
+    root = zarr.group(store=store)
+    image_group = root.create_group("volume")
+    storage_opts = {"chunks": output_chunks, "compression": Blosc(cname='lz4', clevel=3, shuffle=Blosc.BITSHUFFLE)}
+
+    write_image(normalized,
+                group=image_group,
+                axes="zyx",
+                storage_options=storage_opts
+                )
+
+    print("Conversion complete.")
+    if use_dask_cluster:
+        print("Closing Dask client and cluster...")
+        client.close()
+        cluster.close()
 
 
 # Example usage
@@ -178,13 +218,22 @@ if __name__ == "__main__":
             ret=False,
         )
 
-    global_min = -0.0003258372307755053
-    global_max = 0.0001485747197875753
+        hdf5_to_zarr(
+            hdf5_path=write_file,
+            hdf5_dataset_name='/exchange/data',
+            zarr_path="cropped_normalized.zarr",
+            output_chunks=(256, 256, 256),
+            compressor=numcodecs.Blosc(cname="lz4", clevel=3, shuffle=numcodecs.Blosc.SHUFFLE),
+            dtype=np.float16,
+            global_min=global_min,
+            global_max=global_max,
+            use_dask_cluster=True,  # Set to True to use Dask cluster for multiprocessing
+        )
 
-    hdf5_to_zarr(
+    hdf5_to_ome(
         hdf5_path=write_file,
         hdf5_dataset_name='/exchange/data',
-        zarr_path="cropped_normalized.zarr",
+        zarr_path="ome_cropped_normalized.zarr",
         output_chunks=(256, 256, 256),
         compressor=numcodecs.Blosc(cname="lz4", clevel=3, shuffle=numcodecs.Blosc.SHUFFLE),
         dtype=np.float16,
