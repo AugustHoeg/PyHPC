@@ -21,6 +21,7 @@ def _crop_task(h5file, frame_idx, crop_window, data_path):
         frame = f[data_path][frame_idx, h_start:h_end, w_start:w_end]
     min_val = np.min(frame)
     max_val = np.max(frame)
+    print("shape of frame:", frame.shape)
     return (frame, frame_idx, min_val, max_val)
 
 def crop_hdf5(
