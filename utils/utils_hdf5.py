@@ -23,7 +23,7 @@ def _crop_task(h5file, frame_idx, crop_window, data_path):
     max_val = np.max(frame)
     return (frame, frame_idx, min_val, max_val)
 
-def process_hdf5(
+def crop_hdf5(
         h5file,
         nworkers,
         worker_task=_crop_task,
@@ -100,4 +100,4 @@ def process_hdf5(
     print("Number of slices", D)
     print(f"Global min: {global_min}, Global max: {global_max}")
 
-    return imstack if ret else None
+    return imstack, global_min, global_max if ret else None, global_min, global_max

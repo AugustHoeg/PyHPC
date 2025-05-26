@@ -163,15 +163,29 @@ if __name__ == "__main__":
     root = "/dtu/3d-imaging-center/projects/2024_DANFIX_130_ExtremeCT/raw_data_extern/2024031208/bone_1_20kev_20x_16bits_20sdd/bin4x4/"
     hdf5_path = os.path.join(root, "scan-6858-6870_recon.h5")
 
+    from utils.utils_hdf5 import crop_hdf5, _crop_task
+
+    # Crop the HDF5 file to a smaller size
+    write_file = "cropped_normalized.h5"
+    _, global_min, global_max = crop_hdf5(hdf5_path,
+        nworkers=32,
+        worker_task=_crop_task,
+        crop_bounds=(0, 512 + 1, 0, 1024 + 1),
+        write_file=write_file,
+        data_path='/exchange/data',
+        dtype=np.float16,
+        ret=False,
+    )
+
     hdf5_to_zarr(
-        hdf5_path=hdf5_path,
+        hdf5_path=write_file,
         hdf5_dataset_name='/exchange/data',
-        zarr_path=os.path.join(root, "cropped_normalized.zarr"),
+        zarr_path="cropped_normalized.zarr",
         output_chunks=(256, 256, 256),
         compressor=numcodecs.Blosc(cname="lz4", clevel=3, shuffle=numcodecs.Blosc.SHUFFLE),
         dtype=np.float16,
-        global_min=-0.00032591819763183594,
-        global_max=0.00014853477478027344,
+        global_min=global_min,
+        global_max=global_max,
         use_dask_cluster=True,  # Set to True to use Dask cluster for multiprocessing
     )
 
