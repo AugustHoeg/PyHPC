@@ -163,10 +163,11 @@ if __name__ == "__main__":
     root = "/dtu/3d-imaging-center/projects/2024_DANFIX_130_ExtremeCT/raw_data_extern/2024031208/bone_1_20kev_20x_16bits_20sdd/bin4x4/"
     hdf5_path = os.path.join(root, "scan-6858-6870_recon.h5")
 
+    write_file = "cropped_normalized.h5"
+
     if False:
         from utils.utils_hdf5 import crop_hdf5, _crop_task
         # Crop the HDF5 file to a smaller size
-        write_file = "cropped_normalized.h5"
         _, global_min, global_max = crop_hdf5(hdf5_path,
             nworkers=32,
             worker_task=_crop_task,
