@@ -163,19 +163,22 @@ if __name__ == "__main__":
     root = "/dtu/3d-imaging-center/projects/2024_DANFIX_130_ExtremeCT/raw_data_extern/2024031208/bone_1_20kev_20x_16bits_20sdd/bin4x4/"
     hdf5_path = os.path.join(root, "scan-6858-6870_recon.h5")
 
-    from utils.utils_hdf5 import crop_hdf5, _crop_task
+    if False:
+        from utils.utils_hdf5 import crop_hdf5, _crop_task
+        # Crop the HDF5 file to a smaller size
+        write_file = "cropped_normalized.h5"
+        _, global_min, global_max = crop_hdf5(hdf5_path,
+            nworkers=32,
+            worker_task=_crop_task,
+            crop_bounds=(0, 512, 0, 1024),
+            write_file=write_file,
+            data_path='/exchange/data',
+            dtype=np.float16,
+            ret=False,
+        )
 
-    # Crop the HDF5 file to a smaller size
-    write_file = "cropped_normalized.h5"
-    _, global_min, global_max = crop_hdf5(hdf5_path,
-        nworkers=32,
-        worker_task=_crop_task,
-        crop_bounds=(0, 512, 0, 1024),
-        write_file=write_file,
-        data_path='/exchange/data',
-        dtype=np.float16,
-        ret=False,
-    )
+    global_min = -0.0003258372307755053
+    global_max = 0.0001485747197875753
 
     hdf5_to_zarr(
         hdf5_path=write_file,

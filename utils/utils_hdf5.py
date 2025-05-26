@@ -80,7 +80,7 @@ def crop_hdf5(
 
         frame, frame_idx, min_val, max_val = results[0].get()
         results.pop(0)
-        print(f"{timestamp()} – Frame {frame_idx +1}/{D}", end='\r')
+        print(f"{timestamp()} – Frame {frame_idx +1}/{D}, Global min/max {global_min}/{global_max}", end='\r')
 
         # update global min/max
         global_min = min(global_min, min_val)
@@ -105,4 +105,7 @@ def crop_hdf5(
     print("Number of slices", D)
     print(f"Global min: {global_min}, Global max: {global_max}")
 
-    return imstack, global_min, global_max if ret else None, global_min, global_max
+    if ret:
+        return imstack, global_min, global_max
+    else:
+        return None, global_min, global_max
