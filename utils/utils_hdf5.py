@@ -41,7 +41,7 @@ def crop_hdf5(
 
     # Calculate slice shape based on crop_window
     h_start, h_end, w_start, w_end = crop_bounds
-    slice_shape = (h_end - h_start - 1, w_end - w_start - 1)
+    slice_shape = (h_end - h_start, w_end - w_start)
     print("Slice shape:", slice_shape)
 
     if ret:
@@ -53,9 +53,9 @@ def crop_hdf5(
             if data_path not in df:
                 df.create_dataset(
                     data_path,
-                    shape=(D, h_end - h_start - 1, w_end - w_start - 1),
+                    shape=(D, slice_shape[0], slice_shape[1]),
                     dtype=dtype,
-                    chunks=(1, h_end - h_start - 1, w_end - w_start - 1)
+                    chunks=(1, slice_shape[0], slice_shape[1])
                 )
             print(f"Created write file {write_file} with shape {df[data_path].shape}")
 
