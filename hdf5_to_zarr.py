@@ -187,7 +187,8 @@ def hdf5_to_ome(
     write_image(normalized,
                 group=image_group,
                 axes="zyx",
-                storage_options=storage_opts
+                storage_options=storage_opts,
+                scaler=None
                 )
 
     print("Conversion complete.")
