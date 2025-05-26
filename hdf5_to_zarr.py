@@ -230,6 +230,9 @@ if __name__ == "__main__":
             use_dask_cluster=True,  # Set to True to use Dask cluster for multiprocessing
         )
 
+    global_min = -0.0001
+    global_max = 0.0001
+
     hdf5_to_ome(
         hdf5_path=write_file,
         hdf5_dataset_name='/exchange/data',
