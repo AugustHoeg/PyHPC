@@ -47,8 +47,9 @@ class ZarrProducer():
             if self.patch_transform:
                 patch = self.patch_transform(patch)
             try:
-                self.queue.put(patch, timeout=0.1)  # block for time out space is available
+                self.queue.put(patch)  # block for time out space is available
             except queue.Full:
+                sleep(0.2)  # Sleep for a short time if the queue is full
                 continue
 
     def _extract_patch(self, data, patch_size=(32, 32, 32)):
@@ -109,7 +110,7 @@ class ZarrProducer():
 
 
 class ZarrDataset(monai.data.Dataset):
-    def __init__(self, ome_levels, paths, patch_shape, patch_transform, num_producers: int = 1, num_workers: int = 1, queue_size: int = 64, base_seed=8338, use_LRU_cache=False):
+    def __init__(self, ome_levels, paths, patch_shape, patch_transform, num_producers: int = 1, num_workers: int = 1, queue_size: int = 64, base_seed=8338, use_LRU_cache=False, start_percent=1.0):
 
         self.ome_levels = ome_levels  # Number of levels in the Zarr dataset
         self.paths = paths
@@ -119,6 +120,7 @@ class ZarrDataset(monai.data.Dataset):
         self.num_workers = num_workers  # Number of worker processes per queue
         self.queue_size = queue_size
         self.base_seed = base_seed
+        self.start_percent = start_percent
 
         super().__init__(paths, patch_transform)
 
@@ -171,9 +173,9 @@ class ZarrDataset(monai.data.Dataset):
             producer.start_workers()
 
         # wait for all queues to fill up
-        print("Waiting for producer queues to fill up...")
+        print(f"Waiting for producer queues to be {self.start_percent*100}% full...")
         for producer in self.producers:
-            while producer.queue.qsize() < self.queue_size:
+            while producer.queue.qsize() < int(self.queue_size * self.start_percent):
                 continue
 
     def stop_producers(self):
@@ -188,7 +190,8 @@ class ZarrDataset(monai.data.Dataset):
                 if producer.queue.empty():
                     continue
                 else:
-                    patch = producer.queue.get(timeout=0.05)
+                    patch = producer.queue.get(timeout=0.1)  # block for time out space is available
+                    #patch = producer.queue.get()  # block for time out space is available
                     return patch
 
     def __len__(self):
@@ -200,9 +203,9 @@ def main():
 
     # Example usage
     batch_size = 8
-    patch_shape = (32, 32, 32)
+    patch_shape = (64, 64, 64)
 
-    ome_levels = ['0', '1', '2']
+    ome_levels = ['0'] #['0', '1', '2']
     paths = ["../ome_array_pyramid.zarr"] * batch_size
 
     seed = 8883
@@ -220,7 +223,7 @@ def main():
         mt.RandFlipd(keys=ome_levels, prob=0.5, spatial_axis=[0, 1, 2]),
     ])
 
-    dataset = ZarrDataset(ome_levels, paths, patch_shape, patch_transform, num_producers=4, num_workers=16, queue_size=256, use_LRU_cache=False)
+    dataset = ZarrDataset(ome_levels, paths, patch_shape, patch_transform, num_producers=4, num_workers=1, queue_size=64, use_LRU_cache=False)
 
     num_workers = 0
     persistent_workers = True if num_workers > 0 else False
@@ -231,12 +234,13 @@ def main():
                             pin_memory=False,
                             persistent_workers=persistent_workers)
 
-    no_epochs = 500
+    no_epochs = 100
 
     start_time = time()
     for i in range(no_epochs):
         for batch in tqdm(dataloader, desc='Reconstructing patches', mininterval=2):
-            pass
+            #pass
+            sleep(0.1)  # Assuming some processing time
             # print("Loaded batch...")
             # for key in batch.keys():
             #     print(f"Key: {key}, Shape: {batch[key].shape}")

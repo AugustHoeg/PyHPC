@@ -1,6 +1,7 @@
 from time import perf_counter as time
 import zarr
 import numpy as np
+from time import sleep
 
 from ome_zarr.io import parse_url
 from ome_zarr.writer import write_image
@@ -71,18 +72,21 @@ if __name__ == "__main__":
 
     patch_size = (64, 64, 64)
     valid_range = np.array(level0.shape) - patch_size
-    no_samples = 100
+    no_samples = 800
 
     start_time = time()
     for i in range(no_samples):
-        if i % 10 == 0:
+        if i % 8 == 0:
             print("Reading patch ", i)
+            sleep(0.1)  # assume some processing time
         # randomly sample a patch
         crop_start = np.random.randint(0, np.array(level0.shape) - patch_size)  #  (0,0,0)
         crop_end = crop_start + patch_size
 
         patch = level0[crop_start[0]:crop_end[0], crop_start[1]:crop_end[1], crop_start[2]:crop_end[2]]
         #patch = data[0][crop_start[0]:crop_end[0], crop_start[1]:crop_end[1], crop_start[2]:crop_end[2]].compute()
+
+
     time_elapsed = time() - start_time
     print(f"Time taken {time_elapsed} sec.")
     print(f"Time taken per patch {time_elapsed / no_samples} sec. (average)")
