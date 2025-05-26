@@ -125,8 +125,8 @@ def hdf5_to_zarr(
 
     # Step 5: Write to Zarr with direct output chunking + compression
     print(f"Saving to Zarr at {zarr_path} with chunks={output_chunks}...")
-    if compressor is None:
-        compressor = numcodecs.Blosc(cname="lz4", clevel=3, shuffle=numcodecs.Blosc.SHUFFLE)
+    # if compressor is None:
+    #     compressor = numcodecs.Blosc(cname="lz4", clevel=3, shuffle=numcodecs.Blosc.SHUFFLE)
 
     # # Set encoding: apply chunks and compressor
     # encoding = {"": {
