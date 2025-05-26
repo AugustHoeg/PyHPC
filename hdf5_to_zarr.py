@@ -149,6 +149,7 @@ def hdf5_to_ome(
     global_max=None,
     use_dask_cluster=True,  # Use Dask cluster for multiprocessing
 ):
+
     # Step 0: Get HDF5 shape
     with h5py.File(hdf5_path, 'r') as f:
         d, h, w = f[hdf5_dataset_name].shape
@@ -206,30 +207,30 @@ if __name__ == "__main__":
 
     write_file = "cropped_normalized.h5"
 
-    if False:
-        from utils.utils_hdf5 import crop_hdf5, _crop_task
-        # Crop the HDF5 file to a smaller size
-        _, global_min, global_max = crop_hdf5(hdf5_path,
-            nworkers=32,
-            worker_task=_crop_task,
-            crop_bounds=(0, 512, 0, 1024),
-            write_file=write_file,
-            data_path='/exchange/data',
-            dtype=np.float16,
-            ret=False,
-        )
 
-        hdf5_to_zarr(
-            hdf5_path=write_file,
-            hdf5_dataset_name='/exchange/data',
-            zarr_path="cropped_normalized.zarr",
-            output_chunks=(256, 256, 256),
-            compressor=numcodecs.Blosc(cname="lz4", clevel=3, shuffle=numcodecs.Blosc.SHUFFLE),
-            dtype=np.float16,
-            global_min=global_min,
-            global_max=global_max,
-            use_dask_cluster=True,  # Set to True to use Dask cluster for multiprocessing
-        )
+    from utils.utils_hdf5 import crop_hdf5, _crop_task
+    # Crop the HDF5 file to a smaller size
+    _, global_min, global_max = crop_hdf5(hdf5_path,
+        nworkers=32,
+        worker_task=_crop_task,
+        crop_bounds=(0, 512, 0, 1024),
+        write_file=write_file,
+        data_path='/exchange/data',
+        dtype=np.float16,
+        ret=False,
+    )
+
+    hdf5_to_zarr(
+        hdf5_path=write_file,
+        hdf5_dataset_name='/exchange/data',
+        zarr_path="cropped_normalized.zarr",
+        output_chunks=(256, 256, 256),
+        compressor=numcodecs.Blosc(cname="lz4", clevel=3, shuffle=numcodecs.Blosc.SHUFFLE),
+        dtype=np.float16,
+        global_min=global_min,
+        global_max=global_max,
+        use_dask_cluster=True,  # Set to True to use Dask cluster for multiprocessing
+    )
 
     global_min = -0.0001
     global_max = 0.0001
