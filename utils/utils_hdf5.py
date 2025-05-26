@@ -21,7 +21,7 @@ def _crop_task(h5file, frame_idx, crop_window, data_path):
         frame = f[data_path][frame_idx, h_start:h_end, w_start:w_end]
     min_val = np.min(frame)
     max_val = np.max(frame)
-    print("shape of frame:", frame.shape)
+    # print("shape of frame:", frame.shape)
     return (frame, frame_idx, min_val, max_val)
 
 def crop_hdf5(
@@ -53,9 +53,9 @@ def crop_hdf5(
             if data_path not in df:
                 df.create_dataset(
                     data_path,
-                    shape=(D, slice_shape[0], slice_shape[1]),
+                    shape=(D, slice_shape[0]-1, slice_shape[1]-1),
                     dtype=dtype,
-                    chunks=(1, slice_shape[0], slice_shape[1])
+                    chunks=(1, slice_shape[0]-1, slice_shape[1]-1)
                 )
             print(f"Created write file {write_file} with shape {df[data_path].shape}")
 
