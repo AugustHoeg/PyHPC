@@ -107,7 +107,7 @@ def hdf5_to_zarr(
         cluster = LocalCluster(processes=True)
         client = Client(cluster)
 
-    data = h5py.File(hdf5_path, 'r')['hdf5_dataset_name']
+    data = h5py.File(hdf5_path, 'r')[hdf5_dataset_name]
     volume = da.from_array(data, chunks=(1, h, w))
 
     if global_min is None or global_max is None:
