@@ -39,6 +39,9 @@ def crop_hdf5(
         D, H, W = f[data_path].shape
         print(f"HDF5 shape: (D={D}, H={H}, W={W})")
 
+    print("overwriting D with 256...")
+    D = 256  # Overwrite D with a fixed value for testing purposes
+
     # Calculate slice shape based on crop_window
     h_start, h_end, w_start, w_end = crop_bounds
     slice_shape = (h_end - h_start, w_end - w_start)
