@@ -40,7 +40,7 @@ def crop_hdf5(
 
     # Calculate slice shape based on crop_window
     h_start, h_end, w_start, w_end = crop_bounds
-    slice_shape = (h_end - h_start, w_end - w_start)
+    slice_shape = (h_end - h_start - 1, w_end - w_start - 1)
 
     if ret:
         imstack = np.zeros((D, slice_shape[0], slice_shape[1]), dtype=dtype)
