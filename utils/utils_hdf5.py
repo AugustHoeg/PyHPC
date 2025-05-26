@@ -61,7 +61,7 @@ def crop_hdf5(
     results = []
 
     # submit tasks for all workers
-    for i, frame_idx in enumerate(nworkers):
+    for frame_idx in range(nworkers):
         args = (h5file, frame_idx, crop_bounds, data_path)
         results.append(pool.apply_async(worker_task, args))
 
