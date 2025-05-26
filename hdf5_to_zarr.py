@@ -24,7 +24,8 @@ def hdf5_to_zarr_multiprocessing(
     crop_bounds,     # (h_start, h_end, w_start, w_end)
     output_chunks=(256, 256, 256),
     compressor=None,
-    dtype=np.float16
+    dtype=np.float16,
+    use_dask_cluster=True  # Use Dask cluster for multiprocessing
 ):
     # Step 0: Get HDF5 shape
     with h5py.File(hdf5_path, 'r') as f:
@@ -35,9 +36,11 @@ def hdf5_to_zarr_multiprocessing(
     cropped_h = h_end - h_start
     cropped_w = w_end - w_start
 
-    # Step 1: Start Dask cluster (multiprocessing)
-    cluster = LocalCluster(processes=True)
-    client = Client(cluster)
+    if use_dask_cluster:
+        print("Using Dask cluster for multiprocessing...")
+        # Step 1: Start Dask cluster (multiprocessing)
+        cluster = LocalCluster(processes=True)
+        client = Client(cluster)
 
     # Step 2: Create lazy list of cropped slices
     lazy_slices = [
@@ -76,8 +79,10 @@ def hdf5_to_zarr_multiprocessing(
         normalized.to_zarr(zarr_path, overwrite=True, encoding=encoding)
 
     print("Conversion complete.")
-    client.close()
-    cluster.close()
+    if use_dask_cluster:
+        print("Closing Dask client and cluster...")
+        client.close()
+        cluster.close()
 
 
 # Example usage
@@ -93,5 +98,6 @@ if __name__ == "__main__":
         crop_bounds=(0, 512 + 1, 0, 1024 + 1),  # crop each slice from H[0:513], W[0:1025], result becomes (D, 512, 1024)
         output_chunks=(256, 256, 256),
         compressor=numcodecs.Blosc(cname="lz4", clevel=3, shuffle=numcodecs.Blosc.SHUFFLE),
-        dtype=np.float16
+        dtype=np.float16,
+        use_dask_cluster=False  # Set to True to use Dask cluster for multiprocessing
     )
