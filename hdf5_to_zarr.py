@@ -170,7 +170,7 @@ if __name__ == "__main__":
     _, global_min, global_max = crop_hdf5(hdf5_path,
         nworkers=32,
         worker_task=_crop_task,
-        crop_bounds=(0, 512 + 1, 0, 1024 + 1),
+        crop_bounds=(0, 512, 0, 1024),
         write_file=write_file,
         data_path='/exchange/data',
         dtype=np.float16,
