@@ -65,6 +65,14 @@ class ZarrProducer():
         out_dict = {self.ome_levels[0]: patch}
         return out_dict
 
+    def ome_coords(self, level, patch_size=(32, 32, 32)):
+
+        """
+        Calculate the coordinates for a patch at a specific OME level.
+        """
+        np.multiply(patch_size, 2**int(level), out=patch_size)  # scale patch size by level
+        return start, end
+
     def _extract_patch_levels(self, data, patch_size=(32, 32, 32)):
 
         volume = data[self.group_name][self.ome_levels[-1]]
@@ -72,11 +80,18 @@ class ZarrProducer():
         end = start + patch_size
         out_dict = {self.ome_levels[-1]: volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]}
 
-        for i in range(len(self.ome_levels) - 2, -1, -1):  # reverse order
-            volume = data[self.group_name][self.ome_levels[i]]
-            start = start * 2
-            end = end * 2
-            out_dict[self.ome_levels[i]] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+        for level in self.ome_levels[:-1]:
+            level_diff = int(level) - int(self.ome_levels[-1])
+            start = start * 2 ** level_diff
+            end = end * 2 ** level_diff
+            volume = data[self.group_name][level]
+            out_dict[level] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+
+        # for i in range(len(self.ome_levels) - 2, -1, -1):  # reverse order
+        #     volume = data[self.group_name][self.ome_levels[i]]
+        #     start = start * 2
+        #     end = end * 2
+        #     out_dict[self.ome_levels[i]] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
 
         return out_dict
 
