@@ -212,11 +212,10 @@ class ZarrIterableDataset(IterableDataset):
             worker_id = 0
             samples_per_worker = self.num_samples
         else:  # in a worker process
-            # split workload
+            worker_id = worker_info.id
             samples_per_worker = int(np.ceil(self.num_samples / float(worker_info.num_workers)))
 
         if self.producer is None and self.num_workers > 0:
-            worker_id = worker_info.id
             self.init_producer(worker_id)
 
         # Generate patches
