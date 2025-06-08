@@ -209,14 +209,15 @@ class ZarrIterableDataset(IterableDataset):
 
         worker_info = torch.utils.data.get_worker_info()
         if worker_info is None:  # single-process data loading, return the full iterator
+            worker_id = 0
             samples_per_worker = self.num_samples
         else:  # in a worker process
             # split workload
             samples_per_worker = int(np.ceil(self.num_samples / float(worker_info.num_workers)))
 
         if self.producer is None and self.num_workers > 0:
-            worker_info = torch.utils.data.get_worker_info()
-            self.init_producer(worker_info.id if worker_info else 0)
+            worker_id = worker_info.id
+            self.init_producer(worker_id)
 
         # Generate patches
         if self.num_workers == 0:
