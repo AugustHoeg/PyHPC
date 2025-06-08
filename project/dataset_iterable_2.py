@@ -14,6 +14,7 @@ from monai.data import SmartCacheDataset, DataLoader, IterableDataset
 from time import sleep
 from time import perf_counter as time
 from multiprocessing import Process, Queue, Event
+#from torch.multiprocessing import Process, Queue, Event
 from threading import Thread
 
 
@@ -261,12 +262,12 @@ def main():
                                   paths,
                                   patch_shape,
                                   patch_transform,
-                                  num_workers=0,
+                                  num_workers=4,
                                   queue_size=64,
                                   store_type='DirectoryStore',
                                   num_samples=1000)
 
-    num_workers = 8
+    num_workers = 4
     persistent_workers = True if num_workers > 0 else False
     dataloader = DataLoader(dataset,
                             batch_size=batch_size,

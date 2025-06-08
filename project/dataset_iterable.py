@@ -149,10 +149,10 @@ def main():
                                   paths,
                                   patch_shape,
                                   patch_transform,
-                                  store_type='Numpy',
+                                  store_type='DirectoryStore',
                                   num_samples=1000)
 
-    num_workers = 0
+    num_workers = 8
     persistent_workers = True if num_workers > 0 else False
     dataloader = DataLoader(dataset,
                             batch_size=batch_size,
