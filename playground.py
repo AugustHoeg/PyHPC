@@ -52,7 +52,7 @@ if __name__ == "__main__":
     # playground_01()
 
     # Read OME Zarr
-    file_path = "ome_array_pyramid.zarr"
+    file_path = "ome_array_pyramid_fsstore.zarr"
 
     store = parse_url(file_path, mode="r").store
     root = zarr.group(store=store)

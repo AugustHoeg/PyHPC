@@ -12,50 +12,98 @@ import matplotlib.pyplot as plt
 from project.dataloader import ZarrDatasetBaseline
 from project.dataset_prefetch_6 import ZarrDataset
 
-def run_speed_test(dataloader, epochs=10, sleep_time=0.1):
+def run_speed_test(dataloader, total_iterations=1000, sleep_time=0.1, sliding_window_size=100, subtract_first_batch=True):
 
+    current_step = 0
     start_time = time()
-    time_list = np.zeros((epochs, len(dataloader)))
-    for i in range(epochs):
-        print(f"Epoch {i + 1}/{epochs}")
-        for j, batch in enumerate(dataloader):
+    time_list = np.zeros(total_iterations)
+
+    batch_size = dataloader.batch_size
+
+    while total_iterations > current_step:
+        for batch_idx, batch in enumerate(dataloader):
+            # Record the time for this batch
+            time_list[current_step] = time()
+
+            current_step += 1
+            if current_step % (total_iterations // 100) == 0:
+                print(f"Current iteration {current_step}/{total_iterations}")
+
+            if current_step >= total_iterations:
+                time_elapsed = time() - start_time
+                print(f"Time taken in total {time_elapsed} sec.")
+                break
+
+            # Simulate some processing time
             if sleep_time > 0:
                 sleep(sleep_time)  # Assuming some processing time
-            batch_time = time()
-            time_list[i][j] = batch_time
-    time_diff_list = time_list[:, 1:] - time_list[:, :-1]  # Calculate time difference between batches
 
-    #time_list[1] -= start_time
-    #time_list.pop(0)
+    # subtract the start time from the recorded times
+    time_list -= start_time
 
-    time_elapsed = time() - start_time
-    print(f"Time taken in total {time_elapsed} sec.")
+    # If subtract_first_batch, set the first batch time as zero
+    if subtract_first_batch:
+        time_list -= time_list[0]
 
-    # Calculate average time per batch
-    avg_time_per_epoch = time_elapsed / epochs
-    print(f"Average time per epoch: {avg_time_per_epoch} sec.")
+    # Calculate time difference between batches
+    time_diff_list = time_list[1:] - time_list[:-1]
 
     # Calculate average time per batch
-    avg_time_per_batch = avg_time_per_epoch / batch_size
-    print(f"Average time per batch: {avg_time_per_batch} sec.")
+    avg_time_per_iteration = time_elapsed / total_iterations
+    print(f"Average time per iteration: {avg_time_per_iteration} sec.")
+
+    # Calculate average time per patch
+    avg_time_per_patch = avg_time_per_iteration / batch_size
+    print(f"Average time per patch: {avg_time_per_patch} sec.")
 
     # Calculate sliding window average
-    window_size = 10
-    sliding_window_avg = np.convolve(time_diff_list[0, :], np.ones(window_size)/window_size, mode='valid')
+    sliding_window_avg = np.convolve(time_diff_list, np.ones(sliding_window_size)/sliding_window_size, mode='valid')
 
-    plt.figure()
-    plt.plot(time_diff_list[0, :], 'o-')
-    plt.xlabel('Batch Number')
+    result_dict = {
+        'total_iterations': total_iterations,
+        'time_elapsed': time_elapsed,
+        'batch_size': batch_size,
+        'sliding_window_size': sliding_window_size,
+        'time_diff_list': time_diff_list,
+        'sliding_window_avg': sliding_window_avg,
+        'avg_time_per_iteration': avg_time_per_iteration,
+        'avg_time_per_patch': avg_time_per_patch
+    }
+
+    return result_dict
+
+def save_results(result_dict, output_file="speed_test_results.txt"):
+    # Write results to a text file
+    with open(output_file, 'w') as f:
+        # Experiment name
+        f.write(f"Speed test experiment: {os.path.basename(output_file)}\n")
+        f.write(f"Total time taken: {result_dict['time_elapsed']} sec.\n")
+        f.write(f"Total iterations: {result_dict['total_iterations']}\n")
+        f.write(f"Average time per iteration: {result_dict['avg_time_per_iteration']} sec.\n")
+        f.write(f"Average time per patch: {result_dict['avg_time_per_patch']} sec.\n")
+        #f.write(f"Sliding window size: {sliding_window_size}\n")
+        #f.write(f"Time differences: {time_diff_list.tolist()}\n")
+        #f.write(f"Sliding window averages: {sliding_window_avg.tolist()}\n")
+
+
+def plot_time_plots(result_dict):
+
+    plt.figure(figsize=(12, 6))
+    plt.plot(result_dict['time_diff_list'])
+    plt.xlabel('Iteration')
     plt.ylabel('Time (s)')
     plt.title('Time taken for each batch')
-    plt.show()
+    plt.ylim(0, np.max(result_dict['time_diff_list']) * 1.1)  # Set y-axis limit to 10% above max time
 
-    plt.figure()
-    plt.plot(sliding_window_avg)
-    plt.xlabel('Batch Number')
+    plt.figure(figsize=(12, 6))
+    plt.plot(result_dict['sliding_window_avg'])
+    plt.xlabel('Iteration')
     plt.ylabel('Sliding Window Average Time (s)')
     plt.title('Sliding Window Average Time taken for each batch')
+    plt.ylim(0, np.max(result_dict['sliding_window_avg']) * 1.1)  # Set y-axis limit to 10% above max time
+
     plt.show()
+
 
 
 def get_dataset(type = "baseline"):

@@ -41,7 +41,7 @@ class ZarrProducer():
     def _worker_process(self, id):
 
         self.set_random_seed(self.seed + id)  # Set random seed for each worker
-        # print("Worker seed set to: ", self.seed + id)
+        print("Worker seed set to: ", self.seed + id)
 
         while not self.stop_event.is_set():
             z = random.choice(self.zarr_data)  # Randomly select a zarr dataset
@@ -70,22 +70,19 @@ class ZarrProducer():
         volume = data[self.group_name][self.ome_levels[-1]]
         start = np.random.randint(0, np.array(volume.shape) - patch_size)
         end = start + patch_size
-        out_dict = {self.ome_levels[-1]: volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]}
+        out_dict = {'L': volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]}
+        # out_dict = {self.ome_levels[-1]: volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]}
 
         for level in self.ome_levels[:-1]:
-            level_diff = int(level) - int(self.ome_levels[-1])
+            level_diff = int(self.ome_levels[-1]) - int(level)
             start = start * 2 ** level_diff
             end = end * 2 ** level_diff
             volume = data[self.group_name][level]
-            out_dict[level] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
-
-        # for i in range(len(self.ome_levels) - 2, -1, -1):  # reverse order
-        #     volume = data[self.group_name][self.ome_levels[i]]
-        #     start = start * 2
-        #     end = end * 2
-        #     out_dict[self.ome_levels[i]] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+            out_dict['H'] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+            # out_dict[level] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
 
         return out_dict
+
 
     def set_workers(self):
 
@@ -182,9 +179,13 @@ class ZarrIterableDataset(IterableDataset):
         self.producer.start_workers()
 
         # wait for all queues to fill up
-        print(f"Waiting for producer queues to be {100}% full...")
-        while self.producer.queue.qsize() < int(self.queue_size):
-            continue
+        while self.producer.queue.qsize() < int(self.queue_size) // 2:
+            print(f"Waiting for producer queues to be {50}% full: {self.producer.queue.qsize()}/{self.queue_size}", end='\r')
+            sleep(1)
+        # print(f"Waiting for producer queues to be {100}% full...")
+        # while self.producer.queue.qsize() < int(self.queue_size):
+        #     continue
+
 
     def _generate_patch(self):
         # Randomly select a zarr dataset
@@ -203,13 +204,16 @@ class ZarrIterableDataset(IterableDataset):
         volume = data[self.group_name][self.ome_levels[-1]]
         start = np.random.randint(0, np.array(volume.shape) - patch_size)
         end = start + patch_size
-        out_dict = {self.ome_levels[-1]: volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]}
+        out_dict = {'L': volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]}
+        # out_dict = {self.ome_levels[-1]: volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]}
 
-        for i in range(len(self.ome_levels) - 2, -1, -1):  # reverse order
-            volume = data[self.group_name][self.ome_levels[i]]
-            start = start * 2
-            end = end * 2
-            out_dict[self.ome_levels[i]] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+        for level in self.ome_levels[:-1]:
+            level_diff = int(self.ome_levels[-1]) - int(level)
+            start = start * 2 ** level_diff
+            end = end * 2 ** level_diff
+            volume = data[self.group_name][level]
+            out_dict['H'] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+            # out_dict[level] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
 
         return out_dict
 
@@ -270,11 +274,11 @@ def main():
                                   patch_shape,
                                   patch_transform,
                                   num_workers=4,
-                                  queue_size=64,
+                                  queue_size=256,
                                   store_type='DirectoryStore',
                                   num_samples=1000)
 
-    num_workers = 4
+    num_workers = 2
     persistent_workers = True if num_workers > 0 else False
     dataloader = DataLoader(dataset,
                             batch_size=batch_size,
