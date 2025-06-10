@@ -10,6 +10,8 @@ exercises/batch_outputs/**
 batch_errors/**
 batch_outputs/**
 batch_jobs/**
+results/**
+data/**
 
 dxchange/
 

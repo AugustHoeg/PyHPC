@@ -1,5 +1,6 @@
 import numpy as np
 import zarr
+from zarr.storage import DirectoryStore
 import dask.array as da
 from ome_zarr.writer import write_image, write_multiscale
 from ome_zarr.scale import Scaler
@@ -11,7 +12,8 @@ from skimage.transform import downscale_local_mean
 # Create/open a Zarr array in write mode
 file_path = "ome_array_pyramid.zarr"
 
-store = parse_url(file_path, mode="w").store
+store = DirectoryStore(file_path)
+#store = parse_url(file_path, mode="w").store
 root = zarr.group(store=store)
 
 # Create a random 3D volume
