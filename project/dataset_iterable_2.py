@@ -170,19 +170,22 @@ class ZarrIterableDataset(IterableDataset):
             if store_type == 'Numpy':
                 data = zarr.open(path, mode='r', cache_attrs=True)
                 z = {self.group_name: {level: np.array(data[self.group_name][level]) for level in self.ome_levels}}
-                self.zarr_data.append(z)
             elif store_type == 'MemoryStore':
                 disk_store = DirectoryStore(path)
                 memory_store = MemoryStore()
                 zarr.copy_store(disk_store, memory_store)
                 z = zarr.open(memory_store, mode='r')
-                self.zarr_data.append(z)
             elif store_type == 'LRUStoreCache':
                 store_size = 2 ** 28  # 256 MB
                 cached_store = LRUStoreCache(FSStore(path), max_size=store_size)
-                self.zarr_data.append(zarr.open(store=cached_store, mode='r', cache_attrs=True))
+                z = zarr.open(store=cached_store, mode='r', cache_attrs=True)
             else:
-                self.zarr_data.append(zarr.open(path, mode='r', cache_attrs=True))
+                z = zarr.open(path, mode='r', cache_attrs=True)
+
+            if self.sampling_method == 'in_chunk' and store_type != 'Numpy':
+                self._assert_chunk_sampling(z, self.patch_shape)
+
+            self.zarr_data.append(z)
 
             store = parse_url(path, mode="r").store
             root = zarr.group(store=store)
@@ -194,6 +197,12 @@ class ZarrIterableDataset(IterableDataset):
             self._sample_data = self._extract_patch_levels_from_chunk
         else:
             self._sample_data = self._extract_patch_levels
+
+    def _assert_chunk_sampling(self, root, patch_shape):
+        chunk_shape = root[self.group_name][self.ome_levels[-1]].chunks
+        if any(ps > cs for ps, cs in zip(patch_shape, chunk_shape)):
+            raise ValueError(
+                f"Patch shape {patch_shape} is larger than chunk shape {chunk_shape} in {root.store.path}.")
 
     def init_producer(self, id):
 
