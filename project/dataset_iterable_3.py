@@ -18,6 +18,58 @@ from multiprocessing import Process, Queue, Event
 from threading import Thread
 
 
+def extract_patch(data, group_name, ome_level, patch_size=(32, 32, 32)):
+    # We start with the first level
+    volume = data[group_name][ome_level]
+    start = np.random.randint(0, np.array(volume.shape) - patch_size)  # (0,0,0)
+    end = start + patch_size
+
+    patch = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+    out_dict = {ome_level: patch}
+    return out_dict
+
+
+def extract_patch_levels(data, group_name, ome_levels, patch_size=(32, 32, 32)):
+    volume = data[group_name][ome_levels[-1]]
+    start = np.random.randint(0, np.array(volume.shape) - patch_size)
+    end = start + patch_size
+    out_dict = {'L': volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]}
+    # out_dict = {self.ome_levels[-1]: volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]}
+
+    for level in ome_levels[:-1]:
+        level_diff = int(ome_levels[-1]) - int(level)
+        start = start * 2 ** level_diff
+        end = end * 2 ** level_diff
+        volume = data[group_name][level]
+        out_dict['H'] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+        # out_dict[level] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+
+    return out_dict
+
+
+def extract_patch_levels_from_chunk(data, group_name, ome_levels, patch_size=(32, 32, 32)):
+    volume = data[group_name][ome_levels[-1]]
+    c_shape = volume.cdata_shape
+    c_idx = tuple(np.random.randint(c_shape))
+
+    valid_range_lr = np.array(volume.chunks) - patch_size + 1
+    start = np.random.randint(0, valid_range_lr)
+    end = start + patch_size
+
+    patch = volume.blocks[c_idx][start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+    out_dict = {ome_levels[-1]: patch}
+
+    for level in ome_levels[:-1]:
+        level_diff = int(ome_levels[-1]) - int(level)
+        start = start * 2 ** level_diff
+        end = end * 2 ** level_diff
+        volume = data[group_name][level]
+        patch = volume.blocks[c_idx][start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+        out_dict[level] = patch
+
+    return out_dict
+
+
 class ZarrProducer():
     def __init__(self, zarr_data, group_name, ome_levels, patch_shape, patch_transform, queue_size: int = 64, num_workers: int = 1, sampling_method='random', seed=8338):
         super().__init__()
@@ -39,9 +91,9 @@ class ZarrProducer():
         self.seed = seed
 
         if sampling_method == 'in_chunk':
-            self._sample_data = self._extract_patch_levels_from_chunk
+            self._sample_data = extract_patch_levels_from_chunk
         else:
-            self._sample_data = self._extract_patch_levels
+            self._sample_data = extract_patch_levels
 
     def _worker_process(self, id):
 
@@ -50,7 +102,7 @@ class ZarrProducer():
 
         while not self.stop_event.is_set():
             z = random.choice(self.zarr_data)  # Randomly select a zarr dataset
-            patch = self._sample_data(z, self.patch_shape)
+            patch = self._sample_data(z, self.group_name, self.ome_levels, self.patch_shape)
             if self.patch_transform:
                 patch = self.patch_transform(patch)
             try:
@@ -58,59 +110,6 @@ class ZarrProducer():
             except queue.Full:
                 sleep(0.2)  # Sleep for a short time if the queue is full
                 continue
-
-    def _extract_patch(self, data, patch_size=(32, 32, 32)):
-
-        # We start with the first level
-        volume = data[self.group_name][self.ome_levels[0]]
-        start = np.random.randint(0, np.array(volume.shape) - patch_size)  # (0,0,0)
-        end = start + patch_size
-
-        patch = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
-        out_dict = {self.ome_levels[0]: patch}
-        return out_dict
-
-    def _extract_patch_levels(self, data, patch_size=(32, 32, 32)):
-
-        volume = data[self.group_name][self.ome_levels[-1]]
-        start = np.random.randint(0, np.array(volume.shape) - patch_size)
-        end = start + patch_size
-        out_dict = {'L': volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]}
-        # out_dict = {self.ome_levels[-1]: volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]}
-
-        for level in self.ome_levels[:-1]:
-            level_diff = int(self.ome_levels[-1]) - int(level)
-            start = start * 2 ** level_diff
-            end = end * 2 ** level_diff
-            volume = data[self.group_name][level]
-            out_dict['H'] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
-            # out_dict[level] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
-
-        return out_dict
-
-    def _extract_patch_levels_from_chunk(self, data, patch_size=(32, 32, 32)):
-
-        volume = data[self.group_name][self.ome_levels[-1]]
-        c_shape = volume.cdata_shape
-        c_idx = tuple(np.random.randint(c_shape))
-
-        valid_range_lr = np.array(volume.chunks) - patch_size + 1
-        start = np.random.randint(0, valid_range_lr)
-        end = start + patch_size
-
-        patch = volume.blocks[c_idx][start[0]:end[0], start[1]:end[1], start[2]:end[2]]
-        out_dict = {self.ome_levels[-1]: patch}
-
-        for level in self.ome_levels[:-1]:
-            level_diff = int(self.ome_levels[-1]) - int(level)
-            start = start * 2 ** level_diff
-            end = end * 2 ** level_diff
-            volume = data[self.group_name][level]
-            patch = volume.blocks[c_idx][start[0]:end[0], start[1]:end[1], start[2]:end[2]]
-            out_dict[level] = patch
-
-        return out_dict
-
 
     def set_workers(self):
 
@@ -194,9 +193,9 @@ class ZarrIterableDataset(IterableDataset):
             print(root.tree())  # Print the structure of the Zarr group
 
         if sampling_method == 'in_chunk':
-            self._sample_data = self._extract_patch_levels_from_chunk
+            self._sample_data = extract_patch_levels_from_chunk
         else:
-            self._sample_data = self._extract_patch_levels
+            self._sample_data = extract_patch_levels
 
     def _assert_chunk_sampling(self, root, patch_shape):
         chunk_shape = root[self.group_name][self.ome_levels[-1]].chunks
@@ -238,53 +237,12 @@ class ZarrIterableDataset(IterableDataset):
         z = random.choice(self.zarr_data)
 
         # Extract a patch from the selected dataset
-        patch = self._sample_data(z, self.patch_shape)
+        patch = self._sample_data(z, self.group_name, self.ome_levels, self.patch_shape)
 
         if self.patch_transform:
             patch = self.patch_transform(patch)
 
         return patch
-
-    def _extract_patch_levels(self, data, patch_size=(32, 32, 32)):
-
-        volume = data[self.group_name][self.ome_levels[-1]]
-        start = np.random.randint(0, np.array(volume.shape) - patch_size)
-        end = start + patch_size
-        out_dict = {'L': volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]}
-        # out_dict = {self.ome_levels[-1]: volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]}
-
-        for level in self.ome_levels[:-1]:
-            level_diff = int(self.ome_levels[-1]) - int(level)
-            start = start * 2 ** level_diff
-            end = end * 2 ** level_diff
-            volume = data[self.group_name][level]
-            out_dict['H'] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
-            # out_dict[level] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
-
-        return out_dict
-
-    def _extract_patch_levels_from_chunk(self, data, patch_size=(32, 32, 32)):
-
-        volume = data[self.group_name][self.ome_levels[-1]]
-        c_shape = volume.cdata_shape
-        c_idx = tuple(np.random.randint(c_shape))
-
-        valid_range_lr = np.array(volume.chunks) - patch_size + 1
-        start = np.random.randint(0, valid_range_lr)
-        end = start + patch_size
-
-        patch = volume.blocks[c_idx][start[0]:end[0], start[1]:end[1], start[2]:end[2]]
-        out_dict = {self.ome_levels[-1]: patch}
-
-        for level in self.ome_levels[:-1]:
-            level_diff = int(self.ome_levels[-1]) - int(level)
-            start = start * 2 ** level_diff
-            end = end * 2 ** level_diff
-            volume = data[self.group_name][level]
-            patch = volume.blocks[c_idx][start[0]:end[0], start[1]:end[1], start[2]:end[2]]
-            out_dict[level] = patch
-
-        return out_dict
 
     def __iter__(self):
 
