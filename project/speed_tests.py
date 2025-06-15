@@ -86,23 +86,72 @@ def save_results(result_dict, output_file="speed_test_results.txt"):
         #f.write(f"Sliding window averages: {sliding_window_avg.tolist()}\n")
 
 
-def plot_time_plots(result_dict):
+# def plot_time_plots(result_dict):
+#
+#     plt.figure(figsize=(12, 6))
+#     plt.plot(result_dict['time_diff_list'])
+#     plt.xlabel('Iteration')
+#     plt.ylabel('Time (s)')
+#     plt.title('Time taken for each batch')
+#     plt.ylim(0, np.max(result_dict['time_diff_list']) * 1.1)  # Set y-axis limit to 10% above max time
+#
+#     plt.figure(figsize=(12, 6))
+#     plt.plot(result_dict['sliding_window_avg'])
+#     plt.xlabel('Iteration')
+#     plt.ylabel('Sliding Window Average Time (s)')
+#     plt.title('Sliding Window Average Time taken for each batch')
+#     plt.ylim(0, np.max(result_dict['sliding_window_avg']) * 1.1)  # Set y-axis limit to 10% above max time
+#
+#     plt.show()
 
+def plot_time_plots(result_dict, save_path=None, filename_prefix='plot'):
+    plt.rcParams.update({'font.family': 'Times New Roman'})
+
+    # First plot: raw time differences
     plt.figure(figsize=(12, 6))
-    plt.plot(result_dict['time_diff_list'])
-    plt.xlabel('Iteration')
-    plt.ylabel('Time (s)')
-    plt.title('Time taken for each batch')
-    plt.ylim(0, np.max(result_dict['time_diff_list']) * 1.1)  # Set y-axis limit to 10% above max time
+    plt.plot(result_dict['time_diff_list'], color='tab:blue')
+    plt.xlabel('Iteration', fontsize=14)
+    plt.ylabel('Time (s)', fontsize=14)
+    plt.title('Time taken for each batch', fontsize=16)
+    plt.ylim(0, np.max(result_dict['time_diff_list']) * 1.1)
+    plt.grid(True)
 
+    if save_path:
+        os.makedirs(save_path, exist_ok=True)
+        file1 = os.path.join(save_path, f'{filename_prefix}_time_diff.pdf')
+        plt.savefig(file1, dpi=300, bbox_inches='tight')
+
+    # Second plot: sliding window average
     plt.figure(figsize=(12, 6))
-    plt.plot(result_dict['sliding_window_avg'])
-    plt.xlabel('Iteration')
-    plt.ylabel('Sliding Window Average Time (s)')
-    plt.title('Sliding Window Average Time taken for each batch')
-    plt.ylim(0, np.max(result_dict['sliding_window_avg']) * 1.1)  # Set y-axis limit to 10% above max time
+    plt.plot(result_dict['sliding_window_avg'], color='tab:orange')
+    plt.xlabel('Iteration', fontsize=14)
+    plt.ylabel('Sliding Window Avg Time (s)', fontsize=14)
+    plt.title('Sliding Window Average Time taken for each batch', fontsize=16)
+    plt.ylim(0, np.max(result_dict['sliding_window_avg']) * 1.1)
+    plt.grid(True)
 
-    plt.show()
+    if save_path:
+        file2 = os.path.join(save_path, f'{filename_prefix}_sliding_avg.pdf')
+        plt.savefig(file2, dpi=300, bbox_inches='tight')
+
+    # Third plot: raw time difference and sliding window average together
+    plt.figure(figsize=(12, 6))
+    plt.plot(result_dict['time_diff_list'], color='tab:blue')
+    plt.plot(result_dict['sliding_window_avg'], color='tab:orange')
+    plt.xlabel('Iteration', fontsize=14)
+    plt.ylabel('Time (s)', fontsize=14)
+    plt.title('Time taken for each batch', fontsize=16)
+    plt.ylim(0, np.max(result_dict['time_diff_list']) * 1.1)
+    plt.legend(['Time per batch', 'Sliding Window Avg'], fontsize=12)
+    plt.grid(True)
+
+    if save_path:
+        file3 = os.path.join(save_path, f'{filename_prefix}_combined.pdf')
+        plt.savefig(file3, dpi=300, bbox_inches='tight')
+    else:
+        plt.show()
+
+
 
 
 

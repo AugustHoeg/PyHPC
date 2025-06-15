@@ -12,6 +12,7 @@ batch_outputs/**
 batch_jobs/**
 results/**
 data/**
+figures/**
 
 dxchange/
 
