@@ -65,8 +65,7 @@ if __name__ == "__main__":
                                          sliding_window_size=total_iterations // 10,
                                          subtract_first_batch=True)
 
-            # plot_time_plots(result_dict)
-
+            plot_time_plots(result_dict, save_path="../figures", filename_prefix=f"chunksize_analysis_patch_size_{patch_size}_chunk_size_{chunk_size}")
             current_time = datetime.datetime.now().strftime("%d-%m-%Y")
             out_file = f"../results/chunksize_analysis_patch_size_{patch_size}_chunk_size_{chunk_size}_{current_time}.txt"
             save_results(result_dict, output_file=out_file)
