@@ -19,7 +19,7 @@ from threading import Thread
 
 
 class ZarrProducer():
-    def __init__(self, zarr_data, group_name, ome_levels, patch_shape, patch_transform, queue_size: int = 64, num_workers: int = 1, seed=8338):
+    def __init__(self, zarr_data, group_name, ome_levels, patch_shape, patch_transform, queue_size: int = 64, num_workers: int = 1, sampling_method='random', seed=8338):
         super().__init__()
 
         # Define data
@@ -38,6 +38,11 @@ class ZarrProducer():
 
         self.seed = seed
 
+        if sampling_method == 'in_chunk':
+            self._sample_data = self._extract_patch_levels_from_chunk
+        else:
+            self._sample_data = self._extract_patch_levels
+
     def _worker_process(self, id):
 
         self.set_random_seed(self.seed + id)  # Set random seed for each worker
@@ -45,7 +50,7 @@ class ZarrProducer():
 
         while not self.stop_event.is_set():
             z = random.choice(self.zarr_data)  # Randomly select a zarr dataset
-            patch = self._extract_patch_levels(z, self.patch_shape)
+            patch = self._sample_data(z, self.patch_shape)
             if self.patch_transform:
                 patch = self.patch_transform(patch)
             try:
@@ -83,6 +88,29 @@ class ZarrProducer():
 
         return out_dict
 
+    def _extract_patch_levels_from_chunk(self, data, patch_size=(32, 32, 32)):
+
+        volume = data[self.group_name][self.ome_levels[-1]]
+        c_shape = volume.cdata_shape
+        c_idx = tuple(np.random.randint(c_shape))
+
+        valid_range_lr = np.array(volume.chunks) - patch_size + 1
+        start = np.random.randint(0, valid_range_lr)
+        end = start + patch_size
+
+        patch = volume.blocks[c_idx][start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+        out_dict = {self.ome_levels[-1]: patch}
+
+        for level in self.ome_levels[:-1]:
+            level_diff = int(self.ome_levels[-1]) - int(level)
+            start = start * 2 ** level_diff
+            end = end * 2 ** level_diff
+            volume = data[self.group_name][level]
+            patch = volume.blocks[c_idx][start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+            out_dict[level] = patch
+
+        return out_dict
+
 
     def set_workers(self):
 
@@ -117,7 +145,7 @@ class ZarrProducer():
 
 class ZarrIterableDataset(IterableDataset):
 
-    def __init__(self, ome_levels, group_name, paths, patch_shape, patch_transform, num_workers, queue_size, base_seed=8338, store_type='Numpy', num_samples=1000):
+    def __init__(self, ome_levels, group_name, paths, patch_shape, patch_transform, num_workers, queue_size, base_seed=8338, store_type='Numpy', num_samples=1000, sampling_method='random'):
         self.group_name = group_name
         self.ome_levels = ome_levels  # Number of levels in the Zarr dataset
         self.paths = paths
@@ -128,6 +156,7 @@ class ZarrIterableDataset(IterableDataset):
         self.base_seed = base_seed
         self.num_samples = num_samples
         self.producer = None
+        self.sampling_method = sampling_method  # Method to sample patches, e.g., 'random', 'in_chunk'
 
         super().__init__(paths, patch_transform)
 
@@ -161,11 +190,12 @@ class ZarrIterableDataset(IterableDataset):
             print(root.info)  # Print the metadata of the Zarr group
             print(root.tree())  # Print the structure of the Zarr group
 
-    def init_producer(self, id):
+        if sampling_method == 'in_chunk':
+            self._sample_data = self._extract_patch_levels_from_chunk
+        else:
+            self._sample_data = self._extract_patch_levels
 
-        if self.num_workers == 0:
-            print("No workers specified, skipping producer initialization.")
-            return
+    def init_producer(self, id):
 
         self.producer = ZarrProducer(self.zarr_data,
                                 group_name=self.group_name,  # Use the path as the group name
@@ -174,6 +204,7 @@ class ZarrIterableDataset(IterableDataset):
                                 patch_transform=self.patch_transform,
                                 queue_size=self.queue_size,
                                 num_workers=self.num_workers,
+                                sampling_method=self.sampling_method,
                                 seed=self.base_seed + id*self.num_workers)  # Use a different seed for each producer
         self.producer.set_workers()
         self.producer.start_workers()
@@ -186,13 +217,19 @@ class ZarrIterableDataset(IterableDataset):
         # while self.producer.queue.qsize() < int(self.queue_size):
         #     continue
 
+    # def stop_workers(self):
+    #     # Stop the worker processes by setting stop event
+    #     self.stop_event.set()
+    #     for worker in self.workers:
+    #         worker.join(timeout=2)
+
 
     def _generate_patch(self):
         # Randomly select a zarr dataset
         z = random.choice(self.zarr_data)
 
         # Extract a patch from the selected dataset
-        patch = self._extract_patch_levels(z, self.patch_shape)
+        patch = self._sample_data(z, self.patch_shape)
 
         if self.patch_transform:
             patch = self.patch_transform(patch)
@@ -214,6 +251,29 @@ class ZarrIterableDataset(IterableDataset):
             volume = data[self.group_name][level]
             out_dict['H'] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
             # out_dict[level] = volume[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+
+        return out_dict
+
+    def _extract_patch_levels_from_chunk(self, data, patch_size=(32, 32, 32)):
+
+        volume = data[self.group_name][self.ome_levels[-1]]
+        c_shape = volume.cdata_shape
+        c_idx = tuple(np.random.randint(c_shape))
+
+        valid_range_lr = np.array(volume.chunks) - patch_size + 1
+        start = np.random.randint(0, valid_range_lr)
+        end = start + patch_size
+
+        patch = volume.blocks[c_idx][start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+        out_dict = {self.ome_levels[-1]: patch}
+
+        for level in self.ome_levels[:-1]:
+            level_diff = int(self.ome_levels[-1]) - int(level)
+            start = start * 2 ** level_diff
+            end = end * 2 ** level_diff
+            volume = data[self.group_name][level]
+            patch = volume.blocks[c_idx][start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+            out_dict[level] = patch
 
         return out_dict
 
@@ -276,16 +336,18 @@ def main():
                                   num_workers=4,
                                   queue_size=256,
                                   store_type='DirectoryStore',
-                                  num_samples=1000)
+                                  num_samples=1000,
+                                  sampling_method='in_chunk'  # 'random' or 'in_chunk'
+                                  )
 
     num_workers = 2
     persistent_workers = True if num_workers > 0 else False
-    dataloader = DataLoader(dataset,
-                            batch_size=batch_size,
-                            shuffle=False,
-                            num_workers=num_workers,
-                            pin_memory=False,
-                            persistent_workers=persistent_workers)
+    dataloader = torch.utils.data.DataLoader(dataset,
+                                            batch_size=batch_size,
+                                            shuffle=False,
+                                            num_workers=num_workers,
+                                            pin_memory=False,
+                                            persistent_workers=persistent_workers)
 
     no_epochs = 10
 

@@ -14,7 +14,7 @@ def cache_zarr(path):
     return z
 
 
-def write_ome_pyramid(image_group, image_pyramid, label_pyramid, chunk_size=(648, 648, 648)):
+def write_ome_pyramid(image_group, image_pyramid, label_pyramid, chunk_size=(648, 648, 648), cname='lz4'):
 
     # Define the chunk sizes for each level
     chunk_sizes = [np.array(chunk_size) // (2**i) for i in range(len(image_pyramid))]
@@ -22,8 +22,9 @@ def write_ome_pyramid(image_group, image_pyramid, label_pyramid, chunk_size=(648
 
     # Define storage options for each level
     # Compressions: LZ4(), Zstd(level=3)
+    # for Blosc, use cname='zstd', 'blosclz', 'lz4', 'lz4hc', 'zlib' or 'snappy'
     storage_opts = [
-        {"chunks": chunk_sizes[i], "compression": Blosc(cname='lz4', clevel=3, shuffle=Blosc.BITSHUFFLE)}
+        {"chunks": chunk_sizes[i], "compression": Blosc(cname=cname, clevel=3, shuffle=Blosc.BITSHUFFLE)}
         for i in range(len(image_pyramid))
     ]
 

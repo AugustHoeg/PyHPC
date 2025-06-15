@@ -15,10 +15,10 @@ if __name__ == "__main__":
     batch_size = 1
 
     for chunk_size in [64, 128, 256]:
-        paths = sorted(glob.glob(os.path.join("../data", "MRI_images", f"{chunk_size}", "*.zarr")))
+        paths = sorted(glob.glob(os.path.join("../data", "MRI_images", f"{chunk_size}", "*_CT.zarr")))
         print(f"Testing with OME-Zarr chunk size: {(chunk_size, chunk_size, chunk_size)}")
 
-        for patch_size in [32, 64, 128, 256]:
+        for patch_size in [16, 32, 64, 128, 256]:
             patch_shape = (patch_size, patch_size, patch_size)
             print(f"Testing with 3D patch shape: {patch_shape}")
 
