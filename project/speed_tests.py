@@ -98,7 +98,7 @@ def save_results(result_dict, output_file="speed_test_results.txt"):
 #     plt.show()
 
 def plot_time_plots(result_dict, save_path=None, filename_prefix='plot'):
-    plt.rcParams.update({'font.family': 'Times New Roman'})
+    plt.rcParams.update({'font.family': 'Times'})
 
     # First plot: raw time differences
     plt.figure(figsize=(12, 6))
@@ -146,7 +146,7 @@ def plot_time_plots(result_dict, save_path=None, filename_prefix='plot'):
 
 
 def plot_time_plots_multi(result_dict_list, save_path=None, filename_prefix='plot'):
-    plt.rcParams.update({'font.family': 'Times New Roman'})
+    plt.rcParams.update({'font.family': 'Times'})
 
     # First plot: raw time differences
     plt.figure(figsize=(12, 6))
@@ -184,7 +184,7 @@ def plot_time_plots_multi(result_dict_list, save_path=None, filename_prefix='plo
 
 def plot_analysis_num_workers_no_cache(result_dict_list, save_path=None, filename_prefix='plot_num_workers_no_cache'):
 
-    plt.rcParams.update({'font.family': 'Times New Roman'})
+    plt.rcParams.update({'font.family': 'Times'})
 
     # First plot: avg time per iteration
     times = [data['result_dict']['avg_time_per_iteration'] for data in result_dict_list]
@@ -208,7 +208,7 @@ def plot_analysis_num_workers_no_cache(result_dict_list, save_path=None, filenam
 
 def plot_analysis_num_workers_with_cache(result_dict_list, save_path=None, filename_prefix='plot_num_workers_no_cache'):
 
-    plt.rcParams.update({'font.family': 'Times New Roman'})
+    plt.rcParams.update({'font.family': 'Times'})
 
     data_workers = np.unique([data['dataloader_workers'] for data in result_dict_list])
     prod_workers = np.unique([data['producer_workers'] for data in result_dict_list])
