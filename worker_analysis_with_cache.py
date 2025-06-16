@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
             print(f"Testing with {dataloader_workers} dataloader workers and {producer_workers} producer workers")
 
-            paths = sorted(glob.glob(os.path.join("../data", "MRI_images", f"{128}", "*_CT.zarr")))
+            paths = sorted(glob.glob(os.path.join("data", "MRI_images", f"{128}", "*_CT.zarr")))
             print(f"Testing with OME-Zarr chunk size: {chunk_size}")
             print(f"Testing with patch shape: {patch_shape}")
 
@@ -81,10 +81,10 @@ if __name__ == "__main__":
 
             # plot_time_plots(result_dict, save_path="../figures", filename_prefix=f"chunksize_analysis_patch_size_{patch_size}_chunk_size_{chunk_size}")
             current_time = datetime.datetime.now().strftime("%d-%m-%Y")
-            out_file = f"../results/worker_analysis_with_cache_dataloader_workers_{dataloader_workers}_producer_workers_{producer_workers}_{current_time}.txt"
+            out_file = f"results/worker_analysis_with_cache_dataloader_workers_{dataloader_workers}_producer_workers_{producer_workers}_{current_time}.txt"
             save_results(result_dict, output_file=out_file)
 
             print(f"Results saved to {out_file}")
 
-    plot_analysis_num_workers_with_cache(result_dict_list, save_path="../figures", filename_prefix=f"worker_analysis_with_cache_analysis_patch_size_{patch_size}")
+    plot_analysis_num_workers_with_cache(result_dict_list, save_path="figures", filename_prefix=f"worker_analysis_with_cache_analysis_patch_size_{patch_size}")
     print("Plotting done")
