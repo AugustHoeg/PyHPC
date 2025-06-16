@@ -49,7 +49,7 @@ if __name__ == "__main__":
                                           paths,
                                           patch_shape,
                                           patch_transform,
-                                          store_type='Numpy',
+                                          store_type='DirectoryStore',
                                           num_samples=1000)
 
             num_workers = 0
