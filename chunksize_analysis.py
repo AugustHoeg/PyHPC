@@ -3,10 +3,10 @@ import glob
 import datetime
 import torch
 import numpy as np
-from dataset_iterable import ZarrIterableDataset
+from project.dataset_iterable import ZarrIterableDataset
 from monai.data import DataLoader
 import monai.transforms as mt
-from speed_tests import run_speed_test, plot_time_plots, save_results, plot_time_plots_multi
+from project.speed_tests import run_speed_test, plot_time_plots, save_results, plot_time_plots_multi
 
 
 if __name__ == "__main__":
@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
         for chunk_size in [64, 128, 256]:
 
-            paths = sorted(glob.glob(os.path.join("../data", "MRI_images", f"{chunk_size}", "*_CT.zarr")))
+            paths = sorted(glob.glob(os.path.join("data", "MRI_images", f"{chunk_size}", "*_CT.zarr")))
             print(f"Testing with OME-Zarr chunk size: {(chunk_size, chunk_size, chunk_size)}")
 
             # Run speed test
@@ -72,9 +72,9 @@ if __name__ == "__main__":
 
             # plot_time_plots(result_dict, save_path="../figures", filename_prefix=f"chunksize_analysis_patch_size_{patch_size}_chunk_size_{chunk_size}")
             current_time = datetime.datetime.now().strftime("%d-%m-%Y")
-            out_file = f"../results/chunksize_analysis_patch_size_{patch_size}_chunk_size_{chunk_size}_{current_time}.txt"
+            out_file = f"results/chunksize_analysis_patch_size_{patch_size}_chunk_size_{chunk_size}_{current_time}.txt"
             save_results(result_dict, output_file=out_file)
 
             print(f"Results saved to {out_file}")
 
-        plot_time_plots_multi(result_dict_list, save_path="../figures", filename_prefix=f"chunksize_analysis_patch_size_{patch_size}")
+        plot_time_plots_multi(result_dict_list, save_path="figures", filename_prefix=f"chunksize_analysis_patch_size_{patch_size}")
