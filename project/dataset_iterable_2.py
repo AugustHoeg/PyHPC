@@ -145,7 +145,7 @@ class ZarrProducer():
 
 class ZarrIterableDataset(IterableDataset):
 
-    def __init__(self, ome_levels, group_name, paths, patch_shape, patch_transform, num_workers, queue_size, base_seed=8338, store_type='Numpy', num_samples=1000, sampling_method='random'):
+    def __init__(self, ome_levels, group_name, paths, patch_shape, patch_transform, num_workers, queue_size, base_seed=8338, store_type='Numpy', num_samples=1000, sampling_method='random', print_metadata=False):
         self.group_name = group_name
         self.ome_levels = ome_levels  # Number of levels in the Zarr dataset
         self.paths = paths
@@ -190,8 +190,9 @@ class ZarrIterableDataset(IterableDataset):
             store = parse_url(path, mode="r").store
             root = zarr.group(store=store)
 
-            print(root.info)  # Print the metadata of the Zarr group
-            print(root.tree())  # Print the structure of the Zarr group
+            if print_metadata:
+                print(root.info)  # Print the metadata of the Zarr group
+                print(root.tree())  # Print the structure of the Zarr group
 
         if sampling_method == 'in_chunk':
             self._sample_data = self._extract_patch_levels_from_chunk

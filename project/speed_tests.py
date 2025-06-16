@@ -152,6 +152,109 @@ def plot_time_plots(result_dict, save_path=None, filename_prefix='plot'):
         plt.show()
 
 
+def plot_time_plots_multi(result_dict_list, save_path=None, filename_prefix='plot'):
+    plt.rcParams.update({'font.family': 'Times New Roman'})
+
+    # First plot: raw time differences
+    plt.figure(figsize=(12, 6))
+    for data in result_dict_list:
+        plt.plot(data['result_dict']['time_diff_list'])
+        #plt.plot(result_dict_list['result_dict']['sliding_window_avg'])
+    plt.xlabel('Iteration', fontsize=14)
+    plt.ylabel('Time (s)', fontsize=14)
+    plt.title(f"Time per batch, patch size {data['patch_size']}", fontsize=16)
+    plt.ylim(0, np.max(data['result_dict']['time_diff_list']) * 1.1)
+    plt.legend([f"Chunk size: {data['chunk_size']}" for data in result_dict_list], fontsize=12)
+    plt.grid(True)
+
+    if save_path:
+        os.makedirs(save_path, exist_ok=True)
+        file1 = os.path.join(save_path, f'{filename_prefix}_time_diff_multi.pdf')
+        plt.savefig(file1, dpi=300, bbox_inches='tight')
+
+    # Second plot: sliding window average
+    plt.figure(figsize=(12, 6))
+    for data in result_dict_list:
+        plt.plot(data['result_dict']['sliding_window_avg'])
+    plt.xlabel('Iteration', fontsize=14)
+    plt.title(f"Average time per batch, patch size {data['patch_size']}", fontsize=16)
+    plt.ylim(0, np.max(data['result_dict']['sliding_window_avg']) * 1.1)
+    plt.legend([f"Chunk size: {data['chunk_size']}" for data in result_dict_list], fontsize=12)
+    plt.grid(True)
+
+    if save_path:
+        file2 = os.path.join(save_path, f'{filename_prefix}_sliding_avg_multi.pdf')
+        plt.savefig(file2, dpi=300, bbox_inches='tight')
+    else:
+        plt.show()
+
+
+def plot_analysis_num_workers_no_cache(result_dict_list, save_path=None, filename_prefix='plot_num_workers_no_cache'):
+
+    plt.rcParams.update({'font.family': 'Times New Roman'})
+
+    # First plot: avg time per iteration
+    times = [data['result_dict']['avg_time_per_iteration'] for data in result_dict_list]
+    num_workers_list = [data['num_workers'] for data in result_dict_list]
+    speedup = [times[0] / time for time in times]  # speed-up is fraction: old_time / new_time
+
+    plt.figure(figsize=(12, 6))
+    plt.plot(num_workers_list, speedup, marker='o', linestyle='-')
+    plt.xlabel('No. of dataloader processes', fontsize=14)
+    plt.ylabel('Speed-up', fontsize=14)
+    plt.title('Average iteration time speed-up vs no. of dataloader processes', fontsize=16)
+    plt.xticks(num_workers_list)
+    plt.grid(True)
+
+    if save_path:
+        os.makedirs(save_path, exist_ok=True)
+        file1 = os.path.join(save_path, f'{filename_prefix}_iteration_speedup_no_cache.pdf')
+        plt.savefig(file1, dpi=300, bbox_inches='tight')
+
+
+
+def plot_analysis_num_workers_with_cache(result_dict_list, save_path=None, filename_prefix='plot_num_workers_no_cache'):
+
+    plt.rcParams.update({'font.family': 'Times New Roman'})
+
+    data_workers = np.unique([data['dataloader_workers'] for data in result_dict_list])
+    prod_workers = np.unique([data['producer_workers'] for data in result_dict_list])
+    time_matrix = np.zeros((len(data_workers), len(prod_workers)))
+
+    c = 0
+    for i in range(len(data_workers)):
+        for j in range(len(prod_workers)):
+            time_matrix[i, j] = result_dict_list[c]['result_dict']['avg_time_per_iteration']
+            c += 1
+
+    # First plot: avg time per iteration
+    speedup_matrix = time_matrix[0, 0] / time_matrix  # speed-up is fraction: old_time / new_time
+
+    # Make 3d plot
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(projection='3d')
+
+    ax.plot_surface(data_workers, prod_workers, speedup_matrix)
+    ax.set_xlabel('No. of dataloader processes', fontsize=14)
+    ax.set_ylabel('No. of producer processes', fontsize=14)
+    ax.set_zlabel('Speed-up', fontsize=14)
+    ax.set_title('Average iteration time speed-up vs no. of dataloader and producer processes', fontsize=16)
+
+    # plt.figure(figsize=(12, 6))
+    # plt.plot3D(data_workers, prod_workers, speedup, marker='o', linestyle='-')
+    # plt.xlabel('No. of dataloader processes', fontsize=14)
+    # plt.ylabel('Speed-up', fontsize=14)
+    # plt.title('Average iteration time speed-up vs no. of dataloader processes', fontsize=16)
+    # plt.xticks(num_workers_list)
+    # plt.grid(True)
+
+    if save_path:
+        os.makedirs(save_path, exist_ok=True)
+        file1 = os.path.join(save_path, f'{filename_prefix}_iteration_speedup_with_cache.pdf')
+        plt.savefig(file1, dpi=300, bbox_inches='tight')
+
+
+
 
 
 
