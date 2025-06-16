@@ -1,16 +1,9 @@
 import os
-from tqdm import tqdm
 import numpy as np
-import torch
-import monai.transforms as mt
-from monai.data import SmartCacheDataset, DataLoader
 from time import sleep
 from time import perf_counter as time
-
 import matplotlib.pyplot as plt
 
-from project.dataloader import ZarrDatasetBaseline
-from project.dataset_prefetch_6 import ZarrDataset
 
 def run_speed_test(dataloader, total_iterations=1000, sleep_time=0.1, sliding_window_size=100, subtract_first_batch=True):
 
@@ -254,73 +247,69 @@ def plot_analysis_num_workers_with_cache(result_dict_list, save_path=None, filen
         plt.savefig(file1, dpi=300, bbox_inches='tight')
 
 
-
-
-
-
-def get_dataset(type = "baseline"):
-
-    if type == "baseline":
-        print("Using baseline dataset")
-        dataset = ZarrDatasetBaseline(ome_levels,
-                                      paths,
-                                      patch_shape,
-                                      patch_transform)
-
-        num_workers = 0
-        persistent_workers = True if num_workers > 0 else False
-        dataloader = DataLoader(dataset,
-                                batch_size=batch_size,
-                                shuffle=False,
-                                num_workers=num_workers,
-                                pin_memory=False,
-                                persistent_workers=persistent_workers)
-
-    else:
-        dataset = ZarrDataset(ome_levels,
-                              paths,
-                              patch_shape,
-                              patch_transform,
-                              num_producers=8,
-                              num_workers=1,
-                              queue_size=64,
-                              use_LRU_cache=False)
-
-
-        num_workers = 0
-        persistent_workers = True if num_workers > 0 else False
-        dataloader = DataLoader(dataset,
-                                batch_size=batch_size,
-                                shuffle=False,
-                                num_workers=num_workers,
-                                pin_memory=False,
-                                persistent_workers=persistent_workers)
-
-    return dataset, dataloader
-
-if __name__ == "__main__":
-
-    no_epochs = 100
-    batch_size = 4
-    patch_shape = (64, 64, 64)
-    ome_levels = ['0']  # ['0', '1', '2']
-    paths = ["../ome_array_pyramid.zarr"] * 8
-
-    seed = 8883
-    torch.manual_seed(seed)
-    np.random.seed(seed)
-
-    # Define patch transforms
-    patch_transform = mt.Compose([
-        # mt.Identityd(keys=ome_levels, allow_missing_keys=True),
-        mt.EnsureChannelFirstd(keys=ome_levels, channel_dim='no_channel'),
-        mt.SignalFillEmptyd(keys=ome_levels, replacement=0),  # Remove any NaNs
-        mt.ScaleIntensityd(keys=ome_levels, minv=0.0, maxv=1.0),
-        # mt.Rand3DElasticd(keys=ome_levels, prob=0.5, sigma_range=(5, 10), magnitude_range=(0.1, 0.2), mode='bilinear'),
-        mt.RandFlipd(keys=ome_levels, prob=0.5, spatial_axis=[0, 1, 2]),
-    ])
-
-    dataset, dataloader = get_dataset(type="baseline")
-
-    # Run speed test
-    run_speed_test(dataloader, epochs=no_epochs, sleep_time=0)
+# def get_dataset(type = "baseline"):
+#
+#     if type == "baseline":
+#         print("Using baseline dataset")
+#         dataset = ZarrDatasetBaseline(ome_levels,
+#                                       paths,
+#                                       patch_shape,
+#                                       patch_transform)
+#
+#         num_workers = 0
+#         persistent_workers = True if num_workers > 0 else False
+#         dataloader = DataLoader(dataset,
+#                                 batch_size=batch_size,
+#                                 shuffle=False,
+#                                 num_workers=num_workers,
+#                                 pin_memory=False,
+#                                 persistent_workers=persistent_workers)
+#
+#     else:
+#         dataset = ZarrDataset(ome_levels,
+#                               paths,
+#                               patch_shape,
+#                               patch_transform,
+#                               num_producers=8,
+#                               num_workers=1,
+#                               queue_size=64,
+#                               use_LRU_cache=False)
+#
+#
+#         num_workers = 0
+#         persistent_workers = True if num_workers > 0 else False
+#         dataloader = DataLoader(dataset,
+#                                 batch_size=batch_size,
+#                                 shuffle=False,
+#                                 num_workers=num_workers,
+#                                 pin_memory=False,
+#                                 persistent_workers=persistent_workers)
+#
+#     return dataset, dataloader
+#
+# if __name__ == "__main__":
+#
+#     no_epochs = 100
+#     batch_size = 4
+#     patch_shape = (64, 64, 64)
+#     ome_levels = ['0']  # ['0', '1', '2']
+#     paths = ["../ome_array_pyramid.zarr"] * 8
+#
+#     seed = 8883
+#     torch.manual_seed(seed)
+#     np.random.seed(seed)
+#
+#     # Define patch transforms
+#     patch_transform = mt.Compose([
+#         # mt.Identityd(keys=ome_levels, allow_missing_keys=True),
+#         mt.EnsureChannelFirstd(keys=ome_levels, channel_dim='no_channel'),
+#         mt.SignalFillEmptyd(keys=ome_levels, replacement=0),  # Remove any NaNs
+#         mt.ScaleIntensityd(keys=ome_levels, minv=0.0, maxv=1.0),
+#         # mt.Rand3DElasticd(keys=ome_levels, prob=0.5, sigma_range=(5, 10), magnitude_range=(0.1, 0.2), mode='bilinear'),
+#         mt.RandFlipd(keys=ome_levels, prob=0.5, spatial_axis=[0, 1, 2]),
+#     ])
+#
+#     dataset, dataloader = get_dataset(type="baseline")
+#
+#     # Run speed test
+#     run_speed_test(dataloader, epochs=no_epochs, sleep_time=0)
