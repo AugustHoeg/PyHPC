@@ -42,7 +42,7 @@ def run_speed_test(dataloader, total_iterations=1000, sleep_time=0.1, sliding_wi
     time_diff_list = time_list[1:] - time_list[:-1]
 
     # Calculate average time per batch
-    avg_time_per_iteration = time_elapsed / total_iterations
+    avg_time_per_iteration = np.mean(time_diff_list)  # time_elapsed / total_iterations
     print(f"Average time per iteration: {avg_time_per_iteration} sec.")
 
     # Calculate average time per patch
@@ -145,13 +145,13 @@ def plot_time_plots(result_dict, save_path=None, filename_prefix='plot'):
         plt.show()
 
 
-def plot_time_plots_multi(result_dict_list, save_path=None, filename_prefix='plot'):
+def plot_time_plots_multi(result_dict_list, save_path=None, filename_prefix='plot', max_iterations=1000):
     plt.rcParams.update({'font.family': 'Times'})
 
     # First plot: raw time differences
     plt.figure(figsize=(12, 6))
     for data in result_dict_list:
-        plt.plot(data['result_dict']['time_diff_list'])
+        plt.plot(data['result_dict']['time_diff_list'][:max_iterations])
         #plt.plot(result_dict_list['result_dict']['sliding_window_avg'])
     plt.xlabel('Iteration', fontsize=14)
     plt.ylabel('Time (s)', fontsize=14)
@@ -168,7 +168,7 @@ def plot_time_plots_multi(result_dict_list, save_path=None, filename_prefix='plo
     # Second plot: sliding window average
     plt.figure(figsize=(12, 6))
     for data in result_dict_list:
-        plt.plot(data['result_dict']['sliding_window_avg'])
+        plt.plot(data['result_dict']['sliding_window_avg'][:max_iterations])
     plt.xlabel('Iteration', fontsize=14)
     plt.title(f"Average time per batch, patch size {data['patch_size']}", fontsize=16)
     plt.ylim(0, np.max(data['result_dict']['sliding_window_avg']) * 1.1)

@@ -50,7 +50,7 @@ if __name__ == "__main__":
                                           patch_shape,
                                           patch_transform,
                                           store_type='DirectoryStore',
-                                          num_samples=1000)
+                                          num_samples=1100)
 
             num_workers = 0
             persistent_workers = True if num_workers > 0 else False
@@ -61,9 +61,9 @@ if __name__ == "__main__":
                                     pin_memory=False,
                                     persistent_workers=persistent_workers)
 
-            total_iterations = 1000
+            total_iterations = 1100
             result_dict = run_speed_test(dataloader,
-                                         total_iterations=1000,
+                                         total_iterations=1100,
                                          sleep_time=0,
                                          sliding_window_size=total_iterations // 10,
                                          subtract_first_batch=True)
