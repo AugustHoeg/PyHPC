@@ -149,7 +149,7 @@ def plot_time_plots_multi(result_dict_list, save_path=None, filename_prefix='plo
     plt.rcParams.update({'font.family': 'Times'})
 
     # First plot: raw time differences
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(6, 6))
     for data in result_dict_list:
         plt.plot(data['result_dict']['time_diff_list'][:max_iterations])
         #plt.plot(result_dict_list['result_dict']['sliding_window_avg'])
@@ -166,7 +166,7 @@ def plot_time_plots_multi(result_dict_list, save_path=None, filename_prefix='plo
         plt.savefig(file1, dpi=300, bbox_inches='tight')
 
     # Second plot: sliding window average
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(6, 6))
     for data in result_dict_list:
         plt.plot(data['result_dict']['sliding_window_avg'][:max_iterations])
     plt.xlabel('Iteration', fontsize=14)
