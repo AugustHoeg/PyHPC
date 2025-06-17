@@ -65,7 +65,7 @@ if __name__ == "__main__":
             result_dict = run_speed_test(dataloader,
                                          total_iterations=1100,
                                          sleep_time=0,
-                                         sliding_window_size=total_iterations // 10,
+                                         sliding_window_size=100,
                                          subtract_first_batch=True)
 
             result_dict_list.append({'chunk_size': chunk_size, 'patch_size': patch_size, 'result_dict': result_dict})
