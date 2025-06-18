@@ -164,14 +164,14 @@ def plot_time_plots_multi(result_dict_list, save_path=None, filename_prefix='plo
     for data in result_dict_list:
         plt.plot(data['result_dict']['time_diff_list'][:max_iterations])
         #plt.plot(result_dict_list['result_dict']['sliding_window_avg'])
-    plt.xlabel('Iteration', fontsize=14)
-    plt.ylabel('Time (s)', fontsize=14)
+    plt.xlabel('Iteration', fontsize=18)
+    plt.ylabel('Time [s]', fontsize=18)
     plt.title(f"Time per iteration, patch size: ${data['patch_size']}^3$", fontsize=16)
     plt.ylim(0, np.max(data['result_dict']['time_diff_list']) * 1.1)
-    plt.legend([f"Chunks: ${data['chunk_size']}^3$" for data in result_dict_list], fontsize=12)
+    plt.legend([f"Chunks: ${data['chunk_size']}^3$" for data in result_dict_list], fontsize=14)
     plt.grid(True)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
     plt.tight_layout()
 
     if save_path:
@@ -183,13 +183,14 @@ def plot_time_plots_multi(result_dict_list, save_path=None, filename_prefix='plo
     plt.figure(figsize=(6, 6))
     for data in result_dict_list:
         plt.plot(data['result_dict']['sliding_window_avg'][:max_iterations])
-    plt.xlabel('Iteration', fontsize=14)
-    plt.title(f"Average time per iteration, patch size: ${data['patch_size']}^3$", fontsize=16)
+    plt.xlabel('Iteration', fontsize=18)
+    plt.ylabel('Time [s]', fontsize=18)
+    plt.title(f"Iteration/sec, patch size: ${data['patch_size']}^3$", fontsize=20)
     plt.ylim(0, np.max(data['result_dict']['sliding_window_avg']) * 1.1)
-    plt.legend([f"Chunks: ${data['chunk_size']}^3$" for data in result_dict_list], fontsize=12)
+    plt.legend([f"Chunks: ${data['chunk_size']}^3$" for data in result_dict_list], fontsize=14)
     plt.grid(True)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
     plt.tight_layout()
 
     if save_path:
