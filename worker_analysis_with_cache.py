@@ -19,9 +19,9 @@ if __name__ == "__main__":
 
     result_dict_list = []
 
-    for dataloader_workers in [0, 2]: # 4, 6, 8]:
+    for dataloader_workers in [0, 2, 4, 6, 8]:
 
-        for producer_workers in [0, 2]: # 4, 6, 8]:
+        for producer_workers in [0, 2, 4, 6, 8]:
 
             print(f"Testing with {dataloader_workers} dataloader workers and {producer_workers} producer workers")
 
