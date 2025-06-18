@@ -71,12 +71,12 @@ def write_ome_MRI(chunk_size=(256, 256, 256), group_name="volume", cname='lz4', 
 
 if __name__ == "__main__":
 
-    import qim3d
-    image_path = "data/MRI_images/0190_CT/1/NIFTI/image.nii.gz"
-    nifti = nib.load(image_path)
-    data_nifti = nifti.get_fdata()  # shape (z, y, x)
-    data = np.ascontiguousarray(data_nifti).astype(np.float32)
-    qim3d.io.export_ome_zarr("data/MRI_images/0190_CT_qim.zarr", data, chunk_size=256, downsample_rate=2, order=1, replace=False, method='scaleZYX')
+    # import qim3d
+    # image_path = "data/MRI_images/0190_CT/1/NIFTI/image.nii.gz"
+    # nifti = nib.load(image_path)
+    # data_nifti = nifti.get_fdata()  # shape (z, y, x)
+    # data = np.ascontiguousarray(data_nifti).astype(np.float32)
+    # qim3d.io.export_ome_zarr("data/MRI_images/0190_CT_qim.zarr", data, chunk_size=256, downsample_rate=2, order=1, replace=False, method='scaleZYX')
 
     # # Example usage of different chunk sizes
     # write_ome_MRI(chunk_size=(256, 256, 256), group_name="volume")  # Adjust chunk size and group name as needed
@@ -89,6 +89,7 @@ if __name__ == "__main__":
     # write_ome_MRI(chunk_size=(128, 128, 128), group_name="volume", cname='blosclz', file_end="_blosclz")
     # write_ome_MRI(chunk_size=(128, 128, 128), group_name="volume", cname='zlib', file_end="_zlib")
     # write_ome_MRI(chunk_size=(128, 128, 128), group_name="volume", cname='lz4hc', file_end="_lz4hc")
+    # write_ome_MRI(chunk_size=(128, 128, 128), group_name="volume", cname='lzma', file_end="_lzma")
 
     print("Done")
 

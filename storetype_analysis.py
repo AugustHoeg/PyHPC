@@ -13,17 +13,17 @@ if __name__ == "__main__":
 
     # Example usage
     batch_size = 1
+    chunk_size = 128
 
-    for patch_size in [16, 32, 64, 128, 256]:
-        patch_shape = (patch_size, patch_size, patch_size)
-        print(f"Testing with 3D patch shape: {patch_shape}")
+    for store_type in ['MemoryStore', 'Numpy']:
 
         result_dict_list = []
 
-        for chunk_size in [64, 128, 256]:
+        for patch_size in [16, 32, 64, 128, 256]:
+            patch_shape = (patch_size, patch_size, patch_size)
 
             paths = sorted(glob.glob(os.path.join("data", "MRI_images", f"{chunk_size}", "*_CT.zarr")))
-            print(f"Testing with OME-Zarr chunk size: {(chunk_size, chunk_size, chunk_size)}")
+            print(f"Testing with OME-Zarr patch size: {patch_shape} with store type: {store_type}")
 
             # Run speed test
             ome_levels = ['0']  # ['0', '1', '2']
@@ -49,7 +49,7 @@ if __name__ == "__main__":
                                           paths,
                                           patch_shape,
                                           patch_transform,
-                                          store_type='DirectoryStore',
+                                          store_type=store_type,
                                           num_samples=1100)
 
             num_workers = 0
@@ -72,9 +72,9 @@ if __name__ == "__main__":
 
             # plot_time_plots(result_dict, save_path="../figures", filename_prefix=f"chunksize_analysis_patch_size_{patch_size}_chunk_size_{chunk_size}")
             current_time = datetime.datetime.now().strftime("%d-%m-%Y")
-            out_file = f"results/chunksize_analysis/chunksize_analysis_patch_size_{patch_size}_chunk_size_{chunk_size}_{current_time}.txt"
+            out_file = f"results/storetype_analysis/storetype_analysis_patch_size_{patch_size}_storetype_{store_type}_{current_time}.txt"
             save_results(result_dict, output_file=out_file)
 
             print(f"Results saved to {out_file}")
 
-        plot_time_plots_multi(result_dict_list, save_path="figures", filename_prefix=f"chunksize_analysis_patch_size_{patch_size}")
+        #plot_time_plots_multi(result_dict_list, save_path="figures", filename_prefix=f"chunksize_analysis_patch_size_{patch_size}")

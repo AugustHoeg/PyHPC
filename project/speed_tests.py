@@ -66,6 +66,11 @@ def run_speed_test(dataloader, total_iterations=1000, sleep_time=0.1, sliding_wi
     return result_dict
 
 def save_results(result_dict, output_file="speed_test_results.txt"):
+
+    # Ensure the output directory exists
+    output_dir = os.path.dirname(output_file)
+    os.makedirs(output_dir, exist_ok=True)
+
     # Write results to a text file
     with open(output_file, 'w') as f:
         # Experiment name
@@ -203,6 +208,49 @@ def plot_analysis_num_workers_no_cache(result_dict_list, save_path=None, filenam
         os.makedirs(save_path, exist_ok=True)
         file1 = os.path.join(save_path, f'{filename_prefix}_iteration_speedup_no_cache.pdf')
         plt.savefig(file1, dpi=300, bbox_inches='tight')
+
+
+def plot_analysis_compression(result_dict_list, save_path=None, filename_prefix='plot_compression_analysis'):
+
+    # Compute disk usage for each compression method
+
+
+    plt.rcParams.update({'font.family': 'Times'})
+
+    comp_names = [data['compression'] for data in result_dict_list]
+    disk_usage = [data['disk_usage'] for data in result_dict_list]
+    times = [data['result_dict']['avg_time_per_iteration'] for data in result_dict_list]
+
+    min_usage = min(disk_usage)
+    max_usage = max(disk_usage)
+
+    # # Scale dot sizes from disk usage (optional normalization for aesthetics)
+    # min_size = 100
+    # max_size = 500
+    # dot_sizes = [
+    #     min_size + (usage - min_usage) / (max_usage - min_usage) * (max_size - min_size)
+    #     for usage in disk_usage
+    # ]
+
+    plt.figure(figsize=(12, 6))
+    for usage, time in zip(disk_usage, times):
+        plt.scatter(usage, time, s=150, alpha=0.7)
+
+    plt.xlabel('Total disk usage [MB]', fontsize=14)
+    plt.ylabel('Average iteration time [s]', fontsize=14)
+    plt.title('Average iteration time vs. disk usage', fontsize=16)
+    plt.xlim([min_usage - min_usage * 0.1, max_usage + max_usage * 0.1])
+    plt.ylim([min(times) - min(times) * 0.1, max(times) + max(times) * 0.1])
+    plt.legend(comp_names, fontsize=12, loc='upper right', title='Compression Method')
+    plt.tight_layout()
+
+    plt.grid(True)
+
+    if save_path:
+        os.makedirs(save_path, exist_ok=True)
+        file1 = os.path.join(save_path, f'{filename_prefix}.pdf')
+        plt.savefig(file1, dpi=300, bbox_inches='tight')
+
 
 
 
