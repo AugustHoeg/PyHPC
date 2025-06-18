@@ -127,6 +127,9 @@ def plot_time_plots(result_dict, save_path=None, filename_prefix='plot'):
     plt.title('Sliding Window Average Time taken for each batch', fontsize=16)
     plt.ylim(0, np.max(result_dict['sliding_window_avg']) * 1.1)
     plt.grid(True)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.tight_layout()
 
     if save_path:
         file2 = os.path.join(save_path, f'{filename_prefix}_sliding_avg.pdf')
@@ -142,6 +145,9 @@ def plot_time_plots(result_dict, save_path=None, filename_prefix='plot'):
     plt.ylim(0, np.max(result_dict['time_diff_list']) * 1.1)
     plt.legend(['Time per batch', 'Sliding Window Avg'], fontsize=12)
     plt.grid(True)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.tight_layout()
 
     if save_path:
         file3 = os.path.join(save_path, f'{filename_prefix}_combined.pdf')
@@ -164,6 +170,9 @@ def plot_time_plots_multi(result_dict_list, save_path=None, filename_prefix='plo
     plt.ylim(0, np.max(data['result_dict']['time_diff_list']) * 1.1)
     plt.legend([f"Chunks: ${data['chunk_size']}^3$" for data in result_dict_list], fontsize=12)
     plt.grid(True)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.tight_layout()
 
     if save_path:
         os.makedirs(save_path, exist_ok=True)
@@ -179,6 +188,9 @@ def plot_time_plots_multi(result_dict_list, save_path=None, filename_prefix='plo
     plt.ylim(0, np.max(data['result_dict']['sliding_window_avg']) * 1.1)
     plt.legend([f"Chunks: ${data['chunk_size']}^3$" for data in result_dict_list], fontsize=12)
     plt.grid(True)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.tight_layout()
 
     if save_path:
         file2 = os.path.join(save_path, f'{filename_prefix}_sliding_avg_multi.pdf')
@@ -201,8 +213,12 @@ def plot_analysis_num_workers_no_cache(result_dict_list, save_path=None, filenam
     plt.xlabel('No. of dataloader processes', fontsize=14)
     plt.ylabel('Speed-up', fontsize=14)
     plt.title('Average iteration time speed-up vs no. of dataloader processes', fontsize=16)
-    plt.xticks(num_workers_list)
+    plt.xticks(num_workers_list, fontsize=12)
+    plt.yticks(fontsize=12)
     plt.grid(True)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.tight_layout()
 
     if save_path:
         os.makedirs(save_path, exist_ok=True)
@@ -242,6 +258,8 @@ def plot_analysis_compression(result_dict_list, save_path=None, filename_prefix=
     plt.xlim([min_usage - min_usage * 0.1, max_usage + max_usage * 0.1])
     plt.ylim([min(times) - min(times) * 0.1, max(times) + max(times) * 0.1])
     plt.legend(comp_names, fontsize=12, loc='upper right', title='Compression Method')
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
     plt.tight_layout()
 
     plt.grid(True)
@@ -276,22 +294,56 @@ def plot_analysis_num_workers_with_cache(result_dict_list, save_path=None, filen
     ax = fig.add_subplot(projection='3d')
 
     ax.plot_surface(data_workers, prod_workers, speedup_matrix)
-    ax.set_xlabel('No. of dataloader processes', fontsize=14)
-    ax.set_ylabel('No. of producer processes', fontsize=14)
-    ax.set_zlabel('Speed-up', fontsize=14)
+    ax.set_xlabel('No. of dataloader processes', fontsize=16)
+    ax.set_ylabel('No. of producer processes', fontsize=16)
+    ax.set_zlabel('Speed-up', fontsize=16)
     ax.set_title('Average iteration time speed-up vs no. of dataloader and producer processes', fontsize=16)
-
-    # plt.figure(figsize=(12, 6))
-    # plt.plot3D(data_workers, prod_workers, speedup, marker='o', linestyle='-')
-    # plt.xlabel('No. of dataloader processes', fontsize=14)
-    # plt.ylabel('Speed-up', fontsize=14)
-    # plt.title('Average iteration time speed-up vs no. of dataloader processes', fontsize=16)
-    # plt.xticks(num_workers_list)
-    # plt.grid(True)
+    ax.set_xticks(data_workers, fontsize=12)
+    ax.set_yticks(prod_workers, fontsize=12)
+    ax.xaxis.set_tick_params(labelsize=14)
+    ax.yaxis.set_tick_params(labelsize=14)
+    ax.zaxis.set_tick_params(labelsize=14)
 
     if save_path:
         os.makedirs(save_path, exist_ok=True)
         file1 = os.path.join(save_path, f'{filename_prefix}_iteration_speedup_with_cache.pdf')
+        plt.savefig(file1, dpi=300, bbox_inches='tight')
+
+    # Create bar plot in 3D
+    z_min = 0.8
+    z_max = speedup_matrix.max() + speedup_matrix.max() * 0.1  # Add 10% margin for aesthetics
+    _xx, _yy = np.meshgrid(data_workers, prod_workers)
+    x, y = _xx.ravel(), _yy.ravel()
+    top = speedup_matrix.ravel() - z_min
+    bottom = np.ones_like(top)
+    width = prod_workers[1] - prod_workers[0]
+    depth = data_workers[1] - data_workers[0]
+
+    # Shift bars to center on x/y tick values
+    x_centered = x - width / 2
+    y_centered = y - depth / 2
+
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(projection='3d')
+
+    ax.bar3d(x_centered, y_centered, bottom, width, depth, top, shade=True)
+    ax.set_xlabel('No. of dataloader processes', fontsize=14)
+    ax.set_ylabel('No. of producer processes', fontsize=14)
+    ax.set_zlabel('Speed-up', fontsize=14)
+    ax.set_title('Average iteration time speed-up vs no. of dataloader and producer processes', fontsize=16)
+    ax.set_xticks(data_workers)
+    ax.set_yticks(prod_workers)
+    ax.set_zlim([z_min, z_max])
+    ax.xaxis.set_tick_params(labelsize=14)
+    ax.yaxis.set_tick_params(labelsize=14)
+    ax.zaxis.set_tick_params(labelsize=14)
+    ax.xaxis.labelpad = 10
+    ax.yaxis.labelpad = 10
+    ax.zaxis.labelpad = 10
+
+    if save_path:
+        os.makedirs(save_path, exist_ok=True)
+        file1 = os.path.join(save_path, f'{filename_prefix}_iteration_speedup_with_cache_barplot.pdf')
         plt.savefig(file1, dpi=300, bbox_inches='tight')
 
 

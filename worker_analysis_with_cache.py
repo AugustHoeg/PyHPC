@@ -19,9 +19,9 @@ if __name__ == "__main__":
 
     result_dict_list = []
 
-    for dataloader_workers in [0, 2, 4, 6, 8]:
+    for dataloader_workers in [0, 2]: # 4, 6, 8]:
 
-        for producer_workers in [0, 2, 4, 6, 8]:
+        for producer_workers in [0, 2]: # 4, 6, 8]:
 
             print(f"Testing with {dataloader_workers} dataloader workers and {producer_workers} producer workers")
 
@@ -56,7 +56,7 @@ if __name__ == "__main__":
                                           num_workers=producer_workers,
                                           queue_size=256,
                                           store_type='DirectoryStore',
-                                          num_samples=1000)
+                                          num_samples=1100)
 
             persistent_workers = True if dataloader_workers > 0 else False
             dataloader = DataLoader(dataset,
@@ -66,11 +66,11 @@ if __name__ == "__main__":
                                     pin_memory=False,
                                     persistent_workers=persistent_workers)
 
-            total_iterations = 1000
+            total_iterations = 1100
             result_dict = run_speed_test(dataloader,
-                                         total_iterations=1000,
+                                         total_iterations=1100,
                                          sleep_time=0,
-                                         sliding_window_size=total_iterations // 10,
+                                         sliding_window_size=100,
                                          subtract_first_batch=True)
 
             result_dict_list.append({'chunk_size': chunk_size,

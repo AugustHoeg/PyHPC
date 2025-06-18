@@ -52,7 +52,7 @@ if __name__ == "__main__":
                                       patch_shape,
                                       patch_transform,
                                       store_type='DirectoryStore',
-                                      num_samples=1000)
+                                      num_samples=1100)
 
         persistent_workers = True if num_workers > 0 else False
         dataloader = DataLoader(dataset,
@@ -62,11 +62,11 @@ if __name__ == "__main__":
                                 pin_memory=False,
                                 persistent_workers=persistent_workers)
 
-        total_iterations = 1000
+        total_iterations = 1100
         result_dict = run_speed_test(dataloader,
-                                     total_iterations=1000,
+                                     total_iterations=1100,
                                      sleep_time=0,
-                                     sliding_window_size=total_iterations // 10,
+                                     sliding_window_size=100,
                                      subtract_first_batch=True)
 
         result_dict_list.append({'chunk_size': chunk_size,
@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
         # plot_time_plots(result_dict, save_path="../figures", filename_prefix=f"chunksize_analysis_patch_size_{patch_size}_chunk_size_{chunk_size}")
         current_time = datetime.datetime.now().strftime("%d-%m-%Y")
-        out_file = f"results/worker_analysis_no_cache_num_workers_{num_workers}_{current_time}.txt"
+        out_file = f"results/no_cache_analysis/worker_analysis_no_cache_num_workers_{num_workers}_{current_time}.txt"
         save_results(result_dict, output_file=out_file)
 
         print(f"Results saved to {out_file}")
