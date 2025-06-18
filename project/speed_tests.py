@@ -303,6 +303,9 @@ def plot_analysis_num_workers_with_cache(result_dict_list, save_path=None, filen
     ax.xaxis.set_tick_params(labelsize=14)
     ax.yaxis.set_tick_params(labelsize=14)
     ax.zaxis.set_tick_params(labelsize=14)
+    ax.xaxis.labelpad = 10
+    ax.yaxis.labelpad = 10
+    ax.zaxis.labelpad = 10
 
     if save_path:
         os.makedirs(save_path, exist_ok=True)
@@ -327,9 +330,9 @@ def plot_analysis_num_workers_with_cache(result_dict_list, save_path=None, filen
     ax = fig.add_subplot(projection='3d')
 
     ax.bar3d(x_centered, y_centered, bottom, width, depth, top, shade=True)
-    ax.set_xlabel('No. of dataloader processes', fontsize=14)
-    ax.set_ylabel('No. of producer processes', fontsize=14)
-    ax.set_zlabel('Speed-up', fontsize=14)
+    ax.set_xlabel('No. of dataloader processes', fontsize=16)
+    ax.set_ylabel('No. of producer processes', fontsize=16)
+    ax.set_zlabel('Speed-up', fontsize=16)
     ax.set_title('Average iteration time speed-up vs no. of dataloader and producer processes', fontsize=16)
     ax.set_xticks(data_workers)
     ax.set_yticks(prod_workers)
