@@ -33,7 +33,7 @@ if __name__ == "__main__":
             ome_levels = ['0']  # ['0', '1', '2']
             group_name = "volume"
 
-            seed = 8883
+            seed = 8884
             torch.manual_seed(seed)
             np.random.seed(seed)
 

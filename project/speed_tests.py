@@ -311,7 +311,7 @@ def plot_analysis_num_workers_with_cache(result_dict_list, save_path=None, filen
     if save_path:
         os.makedirs(save_path, exist_ok=True)
         file1 = os.path.join(save_path, f'{filename_prefix}_iteration_speedup_with_cache.pdf')
-        plt.savefig(file1, dpi=300, bbox_inches='tight')
+        plt.savefig(file1, dpi=300)
 
     # Create bar plot in 3D
     z_min = 0.8
@@ -348,7 +348,7 @@ def plot_analysis_num_workers_with_cache(result_dict_list, save_path=None, filen
     if save_path:
         os.makedirs(save_path, exist_ok=True)
         file1 = os.path.join(save_path, f'{filename_prefix}_iteration_speedup_with_cache_barplot.pdf')
-        plt.savefig(file1, dpi=300, bbox_inches='tight')
+        plt.savefig(file1, dpi=300)
 
 
 # def get_dataset(type = "baseline"):
