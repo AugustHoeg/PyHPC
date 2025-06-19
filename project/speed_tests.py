@@ -78,7 +78,10 @@ def save_results(result_dict, output_file="speed_test_results.txt"):
         f.write(f"Total time taken: {result_dict['time_elapsed']} sec.\n")
         f.write(f"Total iterations: {result_dict['total_iterations']}\n")
         f.write(f"Average time per iteration: {result_dict['avg_time_per_iteration']} sec.\n")
+        f.write(f"Average time per iteration: {result_dict['avg_time_per_iteration'] * 1000:.2f} ms\n")
         f.write(f"Average time per patch: {result_dict['avg_time_per_patch']} sec.\n")
+        f.write(f"Average time per patch: {result_dict['avg_time_per_patch'] * 1000:.2f} ms\n")
+
         #f.write(f"Sliding window size: {sliding_window_size}\n")
         #f.write(f"Time differences: {time_diff_list.tolist()}\n")
         #f.write(f"Sliding window averages: {sliding_window_avg.tolist()}\n")
