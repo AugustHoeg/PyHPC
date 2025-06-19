@@ -299,7 +299,7 @@ def plot_analysis_num_workers_with_cache(result_dict_list, save_path=None, filen
 
     ax.plot_surface(data_workers, prod_workers, speedup_matrix)
     ax.set_xlabel('No. of dataloader processes', fontsize=16)
-    ax.set_ylabel('No. of producer processes', fontsize=16)
+    ax.set_ylabel('No. of producer threads', fontsize=16)
     ax.set_zlabel('Speed-up', fontsize=16)
     ax.set_title('Average iteration time speed-up vs no. of dataloader and producer processes', fontsize=16)
     ax.set_xticks(data_workers)
@@ -335,7 +335,7 @@ def plot_analysis_num_workers_with_cache(result_dict_list, save_path=None, filen
 
     ax.bar3d(x_centered, y_centered, bottom, width, depth, top, shade=True)
     ax.set_xlabel('No. of dataloader processes', fontsize=16)
-    ax.set_ylabel('No. of producer processes', fontsize=16)
+    ax.set_ylabel('No. of producer threads', fontsize=16)
     ax.set_zlabel('Speed-up', fontsize=16)
     ax.set_title('Average iteration time speed-up vs no. of dataloader and producer processes', fontsize=16)
     ax.set_xticks(data_workers)
