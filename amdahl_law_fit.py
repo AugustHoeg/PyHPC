@@ -25,7 +25,7 @@ plt.grid(True)
 plt.show()
 
 # Your data
-n_processes = np.array([1, 2, 4, 8, 16, 24])  # example
+n_processes = np.array([0, 2, 4, 8, 16, 32])  # example
 times = [0.3300, 0.2476, 0.1173, 0.0608, 0.0308, 0.02825]
 speedup = [times[0] / time for time in times]  # speed-up is fraction: old_time / new_time
 #speedups = np.array([1.0, 1.8, 3.2, 5.5, 7.0, 8.0])  # your actual measurements
