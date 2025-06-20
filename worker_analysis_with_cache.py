@@ -54,7 +54,7 @@ if __name__ == "__main__":
                                           patch_shape,
                                           patch_transform,
                                           num_workers=producer_workers,
-                                          queue_size=256,
+                                          queue_size=64,
                                           store_type='DirectoryStore',
                                           num_samples=1100)
 
