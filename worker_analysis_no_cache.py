@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     result_dict_list = []
 
-    for num_workers in [0, 2, 4, 8, 16, 24]:
+    for num_workers in [0, 2, 4, 8, 16, 32]:
 
         print(f"Testing with {num_workers} workers")
 
