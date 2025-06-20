@@ -25,8 +25,9 @@ plt.grid(True)
 plt.show()
 
 # Your data
-n_processes = np.array([0, 2, 4, 8, 16, 32])  # example
-times = [0.3300, 0.2476, 0.1173, 0.0608, 0.0308, 0.02825]
+n_processes = np.array([1, 2, 4, 8, 16, 32])  # example
+times = [0.3552052503257406, 0.3007059870436738, 0.1455757122702553, 0.08730617339763436, 0.06059182422658051, 0.049057833301184676]
+#times = [0.3537135922365852, 0.2608217356733386, 0.12369120546679482, 0.0682518230090958, 0.03264487462237543, 0.01875642729662863]
 speedup = [times[0] / time for time in times]  # speed-up is fraction: old_time / new_time
 #speedups = np.array([1.0, 1.8, 3.2, 5.5, 7.0, 8.0])  # your actual measurements
 
@@ -45,7 +46,7 @@ plt.semilogx(n_processes, speedup, 'o', label='Measured speedup')
 plt.semilogx(n_fit, speedup_fit, '-', label=f'Amdahl fit (F ≈ {F_estimated:.3f})')
 
 # Ticks: make sure they appear at your actual process counts
-n_processes = np.array([1, 2, 4, 8, 16, 24, 32, 64, 128])  # example
+n_processes = np.array([1, 2, 4, 8, 16, 32, 64, 128])  # example
 plt.xticks(n_processes, labels=[str(n) for n in n_processes])
 plt.xlabel('No. of dataloader processes', fontsize=14)
 plt.ylabel('Speed-up', fontsize=14)
