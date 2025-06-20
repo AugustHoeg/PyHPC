@@ -101,7 +101,7 @@ class ZarrProducer():
     def _worker_process(self, id):
 
         self.set_random_seed(self.seed + id)  # Set random seed for each worker
-        print("Worker seed set to: ", self.seed + id)
+        # print("Worker seed set to: ", self.seed + id)
 
         while not self.stop_event.is_set():
             z = random.choice(self.zarr_data)  # Randomly select a zarr dataset
@@ -231,8 +231,8 @@ class ZarrIterableDataset(IterableDataset):
         self.producer.start_workers()
 
         # wait for all queues to fill up
+        print(f"Waiting for producer queues to be {50}% full...", end='\r')
         while np.sum([queue.qsize() for queue in self.producer.queues]) < int(self.queue_size * self.num_workers) // 2:
-            print(f"Waiting for producer queues to be {50}% full...", end='\r')
             sleep(1)
         # print(f"Waiting for producer queues to be {100}% full...")
         # while self.producer.queue.qsize() < int(self.queue_size):
