@@ -100,7 +100,7 @@ class ZarrProducer():
 
     def _worker_process(self, id):
 
-        self.set_random_seed(self.seed + id)  # Set random seed for each worker
+        self._set_random_seed(self.seed + id)  # Set random seed for each worker
         # print("Worker seed set to: ", self.seed + id)
 
         while not self.stop_event.is_set():
@@ -144,7 +144,7 @@ class ZarrProducer():
         for worker in self.workers:
             worker.join(timeout=2)
 
-    def set_random_seed(self, seed):
+    def _set_random_seed(self, seed):
         if seed is None:
             seed = random.randint(1, 10000)
         random.seed(seed)
@@ -157,7 +157,7 @@ class ZarrProducer():
 
 class ZarrIterableDataset(IterableDataset):
 
-    def __init__(self, ome_levels, group_name, paths, patch_shape, patch_transform, num_workers, queue_size, base_seed=8338, store_type='Numpy', num_samples=1000, sampling_method='random'):
+    def __init__(self, ome_levels, group_name, paths, patch_shape, patch_transform, num_workers, queue_size, base_seed=8338, store_type='Numpy', num_samples=1000, sampling_method='random', print_metadata=False):
         self.group_name = group_name
         self.ome_levels = ome_levels  # Number of levels in the Zarr dataset
         self.paths = paths
@@ -169,6 +169,8 @@ class ZarrIterableDataset(IterableDataset):
         self.num_samples = num_samples
         self.producer = None
         self.sampling_method = sampling_method  # Method to sample patches, e.g., 'random', 'in_chunk'
+        self.store_type = store_type
+        self.print_metadata = print_metadata # Print metadata of the Zarr group
 
         super().__init__(paths, patch_transform)
 
@@ -177,38 +179,43 @@ class ZarrIterableDataset(IterableDataset):
             if not os.path.exists(path):
                 raise ValueError(f"Path {path} does not exist.")
 
-        self.zarr_data = []
+        if sampling_method == 'in_chunk':
+            self._sample_data = extract_patch_levels_from_chunk
+        else:
+            self._sample_data = extract_patch_levels
+
+    def _load_data(self, paths):
+
+        zarr_data = []
         for path in paths:
-            if store_type == 'Numpy':
+            if self.store_type == 'Numpy':
                 data = zarr.open(path, mode='r', cache_attrs=True)
                 z = {self.group_name: {level: np.array(data[self.group_name][level]) for level in self.ome_levels}}
-            elif store_type == 'MemoryStore':
+            elif self.store_type == 'MemoryStore':
                 disk_store = DirectoryStore(path)
                 memory_store = MemoryStore()
                 zarr.copy_store(disk_store, memory_store)
                 z = zarr.open(memory_store, mode='r')
-            elif store_type == 'LRUStoreCache':
+            elif self.store_type == 'LRUStoreCache':
                 store_size = 2 ** 28  # 256 MB
                 cached_store = LRUStoreCache(FSStore(path), max_size=store_size)
                 z = zarr.open(store=cached_store, mode='r', cache_attrs=True)
             else:
                 z = zarr.open(path, mode='r', cache_attrs=True)
 
-            if self.sampling_method == 'in_chunk' and store_type != 'Numpy':
+            if self.sampling_method == 'in_chunk' and self.store_type != 'Numpy':
                 self._assert_chunk_sampling(z, self.patch_shape)
 
-            self.zarr_data.append(z)
+            zarr_data.append(z)
 
             store = parse_url(path, mode="r").store
             root = zarr.group(store=store)
 
-            print(root.info)  # Print the metadata of the Zarr group
-            print(root.tree())  # Print the structure of the Zarr group
+            if self.print_metadata:
+                print(root.info)  # Print the metadata of the Zarr group
+                print(root.tree())  # Print the structure of the Zarr group
 
-        if sampling_method == 'in_chunk':
-            self._sample_data = extract_patch_levels_from_chunk
-        else:
-            self._sample_data = extract_patch_levels
+        return zarr_data
 
     def _assert_chunk_sampling(self, root, patch_shape):
         chunk_shape = root[self.group_name][self.ome_levels[-1]].chunks
@@ -216,9 +223,9 @@ class ZarrIterableDataset(IterableDataset):
             raise ValueError(
                 f"Patch shape {patch_shape} is larger than chunk shape {chunk_shape} in {root.store.path}.")
 
-    def init_producer(self, id):
+    def _init_producer(self, id, zarr_data):
 
-        self.producer = ZarrProducer(self.zarr_data,
+        self.producer = ZarrProducer(zarr_data,
                                 group_name=self.group_name,  # Use the path as the group name
                                 ome_levels=self.ome_levels,
                                 patch_shape=self.patch_shape,
@@ -245,9 +252,9 @@ class ZarrIterableDataset(IterableDataset):
     #         worker.join(timeout=2)
 
 
-    def _generate_patch(self):
+    def _generate_patch(self, zarr_data):
         # Randomly select a zarr dataset
-        z = random.choice(self.zarr_data)
+        z = random.choice(zarr_data)
 
         # Extract a patch from the selected dataset
         patch = self._sample_data(z, self.group_name, self.ome_levels, self.patch_shape)
@@ -263,17 +270,23 @@ class ZarrIterableDataset(IterableDataset):
         if worker_info is None:  # single-process data loading, return the full iterator
             worker_id = 0
             samples_per_worker = self.num_samples
+            worker_paths = self.paths  # Use all paths in single-process mode
         else:  # in a worker process
             worker_id = worker_info.id
+            num_workers = worker_info.num_workers
             samples_per_worker = int(np.ceil(self.num_samples / float(worker_info.num_workers)))
+            worker_paths = [self.paths[i % len(self.paths)] for i in range(worker_id, len(self.paths) + worker_id, num_workers)]
+
+        # Load data
+        zarr_data = self._load_data(worker_paths)
 
         if self.producer is None and self.num_workers > 0:
-            self.init_producer(worker_id)
+            self._init_producer(worker_id, zarr_data)
 
         # Generate patches
         if self.num_workers == 0:
             for _ in range(samples_per_worker):
-                yield self._generate_patch()
+                yield self._generate_patch(zarr_data)
         else:
             for _ in range(samples_per_worker):
                 yield self.producer.get()  # block for time out space is available
