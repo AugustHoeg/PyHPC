@@ -3,7 +3,7 @@ import glob
 import datetime
 import torch
 import numpy as np
-from project.dataset_iterable_3 import ZarrIterableDataset
+from project.dataset_iterable_optimized import ZarrIterableDataset
 from monai.data import DataLoader
 import monai.transforms as mt
 from project.speed_tests import run_speed_test, plot_time_plots, save_results, plot_time_plots_multi, plot_analysis_num_workers_with_cache
