@@ -59,7 +59,7 @@ if __name__ == "__main__":
                                           num_samples=1100)
 
             persistent_workers = True if dataloader_workers > 0 else False
-            dataloader = DataLoader(dataset,
+            dataloader = torch.utils.data.DataLoader(dataset,
                                     batch_size=batch_size,
                                     shuffle=False,
                                     num_workers=dataloader_workers,
