@@ -21,7 +21,7 @@ from queue import Empty
 #from torch.multiprocessing import Process, Queue, Event
 from threading import Thread
 
-def sample(volume, center, patch_size):
+def sample(volume, patch, center, patch_size):
     """
     volume: 3D numpy array of shape (D, H, W)
     center: tuple (cz, cy, cx) specifying cube center in array coordinates
@@ -30,9 +30,6 @@ def sample(volume, center, patch_size):
     D, H, W = volume.shape
     d, h, w = patch_size
     cz, cy, cx = center
-
-    # Create an empty cube filled with zeros
-    cube = np.zeros((d, h, w))
 
     # Compute cube boundaries in array coordinates
     z0 = cz - d // 2
@@ -59,9 +56,9 @@ def sample(volume, center, patch_size):
     dst_x1 = dst_x0 + (src_x1 - src_x0)
 
     # Copy the overlapping region
-    cube[dst_z0:dst_z1, dst_y0:dst_y1, dst_x0:dst_x1] = volume[src_z0:src_z1, src_y0:src_y1, src_x0:src_x1]
+    patch[dst_z0:dst_z1, dst_y0:dst_y1, dst_x0:dst_x1] = volume[src_z0:src_z1, src_y0:src_y1, src_x0:src_x1]
 
-    return cube
+    return patch
 
 def extract_patch(data, group_name, ome_level, patch_size=(32, 32, 32)):
     # TODO: Fix this method
@@ -111,8 +108,11 @@ def extract_patch_levels_prealloc(data, group_pair, patch_size=(32, 32, 32), pat
     c0, c1, c2 = np.random.randint(0, valid_shape) + patch_size_lr // 2
     C0, C1, C2 = np.multiply((c0, c1, c2), f)
 
-    patch_L = sample(volume_L, center=(c0, c1, c2), patch_size=patch_size)
-    patch_H = sample(volume_H, center=(C0, C1, C2), patch_size=patch_size_hr)
+    # Create an empty cube filled with zeros
+    patch_L = np.zeros(patch_size)
+    patch_L = sample(volume_L, patch_L, center=(c0, c1, c2), patch_size=patch_size)
+    patch_H = np.zeros(patch_size_hr)
+    patch_H = sample(volume_H, patch_H, center=(C0, C1, C2), patch_size=patch_size_hr)
 
     out_dict = {'L': patch_L, 'H': patch_H}
 
