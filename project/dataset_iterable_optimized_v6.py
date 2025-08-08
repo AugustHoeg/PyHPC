@@ -109,9 +109,9 @@ def extract_patch_levels_prealloc(data, group_pair, patch_size=(32, 32, 32), pat
     C0, C1, C2 = np.multiply((c0, c1, c2), f)
 
     # Create an empty cube filled with zeros
-    patch_L = np.zeros(patch_size)
+    patch_L = np.zeros(patch_size, dtype=volume_L.dtype)
     patch_L = sample(volume_L, patch_L, center=(c0, c1, c2), patch_size=patch_size)
-    patch_H = np.zeros(patch_size_hr)
+    patch_H = np.zeros(patch_size_hr, dtype=volume_H.dtype)
     patch_H = sample(volume_H, patch_H, center=(C0, C1, C2), patch_size=patch_size_hr)
 
     out_dict = {'L': patch_L, 'H': patch_H}
