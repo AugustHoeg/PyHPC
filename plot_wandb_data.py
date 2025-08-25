@@ -6,14 +6,15 @@ def plot_memory_utilization():
     plt.rcParams.update({'font.family': 'Times'})
 
     # Replace 'your_file.csv' with the actual path to your CSV file
-    csv_path = 'results/wandb_process_memory.csv'
+    # csv_path = 'results/wandb_process_memory.csv'
+    csv_path = 'results/wandb_VoDaSuRe_RAM.csv'
 
     # Read the CSV file, handle quoted values properly
     df = pd.read_csv(csv_path, quotechar='"')
 
     # Extract the relevant columns
     time_col = 'Relative Time (Process)'
-    util_col = 'RRDBNet3D_000 - system/proc.memory.rssMB'
+    util_col = 'RRDBNet3D_000_bs16 - system/proc.memory.rssMB'
 
     # Convert columns to appropriate types
     df[time_col] = pd.to_numeric(df[time_col], errors='coerce')
@@ -41,20 +42,21 @@ def plot_memory_utilization():
     plt.legend(['RAM usage', f'Sliding Window Avg'], loc='best', fontsize=14)
 
     # Save the plot
-    plt.savefig('figures/memory_utilization_over_time.pdf', dpi=300, bbox_inches='tight')
+    plt.savefig('figures/VoDaSuRe_memory_utilization_over_time.pdf', dpi=300, bbox_inches='tight')
 
 def plot_gpu_utilization():
     plt.rcParams.update({'font.family': 'Times'})
 
     # Replace 'your_file.csv' with the actual path to your CSV file
-    csv_path = 'results/wandb_export_2025-06-18T16_35_25.325+02_00.csv'
+    # csv_path = 'results/wandb_export_2025-06-18T16_35_25.325+02_00.csv'
+    csv_path = 'results/wandb_VoDaSuRe_GPU.csv'
 
     # Read the CSV file, handle quoted values properly
     df = pd.read_csv(csv_path, quotechar='"')
 
     # Extract the relevant columns
     time_col = 'Relative Time (Process)'
-    util_col = 'RRDBNet3D_000 - system/gpu.0.gpu'
+    util_col = 'RRDBNet3D_000_bs16 - system/gpu.0.gpu'
 
     # Convert columns to appropriate types
     df[time_col] = pd.to_numeric(df[time_col], errors='coerce')
@@ -83,7 +85,7 @@ def plot_gpu_utilization():
     plt.legend(['GPU utilization', f'Sliding Window Avg'], loc='best', fontsize=14)
 
     # Save the plot
-    plt.savefig('figures/gpu_utilization_over_time.pdf', dpi=300, bbox_inches='tight')
+    plt.savefig('figures/VoDaSuRe_gpu_utilization_over_time.pdf', dpi=300, bbox_inches='tight')
 
 
 if __name__ == "__main__":
