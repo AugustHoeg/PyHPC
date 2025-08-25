@@ -4,8 +4,7 @@
 This project explores the design and optimization of a PyTorch-compatible data loading pipeline for training deep learning models on large volumetric image datasets stored in the [OME-Zarr](https://ngff.openmicroscopy.org/latest/) format. The work was completed as part of a PhD special course on Python and High Performance Computing at the Technical University of Denmark (DTU).
 
 ## Updates
-- ✅ 2024-12-04: Release of first version of the paper on Arxiv.
-- ✅ 2024-12-02: Release the code, models and results of MTVNet.
+- ✅ 2025-08-25: Release of implemetation.
 - **(To do)** Add dataset guide 
 
 ## Overview
@@ -20,3 +19,6 @@ This project explores the design and optimization of a PyTorch-compatible data l
 ```sh
 pip install -r requirements.txt
 ```
+
+### Usage
+See ```examples.ipynb```
