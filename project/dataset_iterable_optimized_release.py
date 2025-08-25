@@ -345,7 +345,6 @@ class ZarrIterableDataset(IterableDataset):
                                      num_workers=self.num_workers,
                                      sampling_method=self.sampling_method,
                                      seed=self.base_seed + id*self.num_workers)  # Use a different seed for each producer
-        print(f"Starting workers...", end='\n')
         self.producer.set_workers()
         self.producer.start_workers()
 
