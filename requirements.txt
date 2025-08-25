@@ -1,0 +1,39 @@
+--find-links https://download.pytorch.org/whl/torch
+torch==2.5.1+cu124
+torchvision
+torchaudio
+zarr
+ome-zarr
+numpy
+dask
+dask-image
+h5py
+cupy-cuda12x
+monai
+torchio
+opencv-python
+hydra-core
+invoke
+scikit-learn
+scikit-image
+matplotlib
+cycler          # Required by matplotlib
+pyparsing       # Required by matplotlib
+Pillow          # Required by matplotlib and napari
+pyyaml          # Often needed by napari and hydra-core
+napari
+pipreqs
+typer
+fastapi
+uvicorn
+coverage
+pytest
+ruff
+python-multipart
+httpx
+locust
+netron
+bentoml
+pandas
+ipykernel       # Required for Jupyter notebooks
+jupyterlab      # Optional, recommended for notebook interface
