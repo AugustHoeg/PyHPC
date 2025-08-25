@@ -9,7 +9,7 @@ This project explores the design and optimization of a PyTorch-compatible data l
 - **(To do)** Add dataset guide 
 
 ## Overview
-<img src="https://raw.githubusercontent.com/AugustHoeg/PyHPC/main/docs/overview_pyhpc.png" width="800"/>
+<img src="https://raw.githubusercontent.com/AugustHoeg/PyHPC/main/docs/overview_pyhpc.png" width="1200"/>
 
 ## Environment
 
