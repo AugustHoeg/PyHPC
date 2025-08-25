@@ -4,7 +4,7 @@
 This project explores the design and optimization of a PyTorch-compatible data loading pipeline for training deep learning models on large volumetric image datasets stored in the [OME-Zarr](https://ngff.openmicroscopy.org/latest/) format. The work was completed as part of a PhD special course on Python and High Performance Computing at the Technical University of Denmark (DTU).
 
 ## Updates
-- ✅ 2025-08-25: Release of implemetation.
+- ✅ 2025-08-25: Release of OME-Zarr data loader implementation.
 - **(To do)** Add dataset guide 
 
 ## Overview
