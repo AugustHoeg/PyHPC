@@ -160,107 +160,16 @@ def extract_patch_levels_from_chunk(data, group_name, ome_levels, patch_size=(32
 
     return out_dict
 
-
-class ZarrProducer():
-    def __init__(self, worker_data, patch_shape, patch_shape_hr, patch_transform, up_factor, queue_size: int = 64, num_workers: int = 1, sampling_method='random', seed=8338):
-        super().__init__()
-
-        # Define data
-        self.worker_data = worker_data
-        self.patch_shape = patch_shape
-        self.patch_shape_hr = patch_shape_hr
-        self.patch_transform = patch_transform
-        self.up_factor = up_factor
-
-        self.num_workers = num_workers
-        self.queues = []  # Each worker will have its own queue
-        for _ in range(num_workers):
-            self.queues.append(Queue(maxsize=queue_size))
-
-        self.workers = []
-        self.stop_event = Event()  # Event to signal workers to stop
-
-        self.seed = seed
-
-        if sampling_method == 'in_chunk':
-            self._sample_data = extract_patch_levels_from_chunk
-        else:
-            self._sample_data = extract_patch_levels_prealloc
-
-    def _worker_process(self, id):
-
-        self._set_random_seed(self.seed + id)  # Set random seed for each worker
-        # print("Worker seed set to: ", self.seed + id)
-
-        w = [self.worker_data[key]['sampling_weight'] for key in self.worker_data]  # sampling weights
-        p = w / np.sum(w)
-        while not self.stop_event.is_set():
-            name = np.random.choice(list(self.worker_data.keys()), p=p)
-            z = random.choice(self.worker_data[name]['zarr_data'])  # Randomly select a zarr file in dataset
-            group_pair = random.choice(self.worker_data[name]['group_pairs'][f'{self.up_factor}'])  # random group pair
-            patch = self._sample_data(z, group_pair, self.patch_shape, self.patch_shape_hr, self.up_factor, metadata=None)  # metadata={'name': name, 'group_pair': group_pair})
-            if self.patch_transform:
-                patch = self.patch_transform(patch)
-            try:
-                self.queues[id].put(patch)  # block for time out space is available
-            except queue.Full:
-                sleep(0.2)  # Sleep for a short time if the queue is full
-                continue
-
-    def get(self):
-        while True:
-            for queue in self.queues:
-                try:
-                    return queue.get_nowait()
-                except Empty:
-                    continue
-            sleep(0.001)  # Sleep for 1 ms to avoid CPU starvation
-
-    def set_workers(self):
-
-        for id in range(self.num_workers):
-            worker = Thread(target=self._worker_process, args=(id,))
-            #worker = Process(target=self._worker_process, args=(id,))
-            #worker.daemon = True
-            self.workers.append(worker)
-
-    def start_workers(self):
-        # Start worker processes
-        for worker in self.workers:
-            worker.start()
-
-        print(f"Started Producer with {self.num_workers} worker(s)")
-
-    def stop_workers(self):
-        # Stop the worker processes by setting stop event
-        self.stop_event.set()
-        for worker in self.workers:
-            worker.join(timeout=2)
-
-    def _set_random_seed(self, seed):
-        if seed is None:
-            seed = random.randint(1, 10000)
-        random.seed(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
-        monai.utils.misc.set_determinism(seed)
-        np.random.RandomState(seed)
-
-
 class ZarrIterableDataset(IterableDataset):
 
-    def __init__(self, dataset_dict, patch_shape, patch_shape_hr, patch_transform, up_factor, num_workers, queue_size, base_seed=8338, store_type='Numpy', num_samples=1000, sampling_method='random', print_metadata=False):
+    def __init__(self, dataset_dict, patch_shape, patch_shape_hr, patch_transform, up_factor, base_seed=8338, store_type='Numpy', num_samples=1000, sampling_method='random', print_metadata=False):
         self.dataset_dict = dataset_dict
         self.patch_shape = patch_shape
         self.patch_shape_hr = patch_shape_hr
         self.patch_transform = patch_transform
         self.up_factor = up_factor
-        self.num_workers = num_workers  # Number of worker processes per queue
-        self.queue_size = queue_size
         self.base_seed = base_seed
         self.num_samples = num_samples
-        self.producer = None
         self.sampling_method = sampling_method  # Method to sample patches, e.g., 'random', 'in_chunk'
         self.store_type = store_type
         self.print_metadata = print_metadata  # Print metadata of the Zarr group
@@ -336,34 +245,6 @@ class ZarrIterableDataset(IterableDataset):
             raise ValueError(
                 f"Patch shape {patch_shape} is larger than chunk shape {chunk_shape} in {root.store.path}.")
 
-    def _init_producer(self, id, worker_data):
-
-        self.producer = ZarrProducer(worker_data=worker_data,
-                                     patch_shape=self.patch_shape,
-                                     patch_shape_hr=self.patch_shape_hr,
-                                     patch_transform=self.patch_transform,
-                                     up_factor=self.up_factor,
-                                     queue_size=self.queue_size,
-                                     num_workers=self.num_workers,
-                                     sampling_method=self.sampling_method,
-                                     seed=self.base_seed + id*self.num_workers)  # Use a different seed for each producer
-        self.producer.set_workers()
-        self.producer.start_workers()
-
-        # wait for all queues to fill up
-        print(f"Waiting for producer queues to be {50}% full...", end='\r')
-        while np.sum([queue.qsize() for queue in self.producer.queues]) < int(self.queue_size * self.num_workers) // 2:
-            sleep(1)
-        # print(f"Waiting for producer queues to be {100}% full...")
-        # while self.producer.queue.qsize() < int(self.queue_size):
-        #     continue
-
-    # def stop_workers(self):
-    #     # Stop the worker processes by setting stop event
-    #     self.stop_event.set()
-    #     for worker in self.workers:
-    #         worker.join(timeout=2)
-
 
     def _generate_patch(self, worker_data):
 
@@ -397,16 +278,9 @@ class ZarrIterableDataset(IterableDataset):
         # Load data
         worker_data = self._load_data(worker_id, num_workers)
 
-        if self.producer is None and self.num_workers > 0:
-            self._init_producer(worker_id, worker_data)
-
         # Generate patches
-        if self.num_workers == 0:
-            for _ in range(samples_per_worker):
-                yield self._generate_patch(worker_data)
-        else:
-            for _ in range(samples_per_worker):
-                yield self.producer.get()  # block for time out space is available
+        for _ in range(samples_per_worker):
+            yield self._generate_patch(worker_data)
 
     def __len__(self):
         # Return a large number to ensure the dataset is infinite
@@ -486,14 +360,12 @@ def main():
                                   patch_shape_hr,
                                   patch_transform,
                                   up_factor=up_factor,
-                                  num_workers=1,
-                                  queue_size=128,
                                   store_type='LocalStore',
                                   num_samples=1000,
                                   sampling_method='random'  # 'random' or 'in_chunk'
                                   )
 
-    num_workers = 1
+    num_workers = 2
     persistent_workers = True if num_workers > 0 else False
     dataloader = torch.utils.data.DataLoader(dataset,
                                             batch_size=batch_size,
