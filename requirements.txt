@@ -16,7 +16,7 @@ hydra-core
 invoke
 scikit-learn
 scikit-image
-matplotlib
+matplotlib==3.9.0
 cycler          # Required by matplotlib
 pyparsing       # Required by matplotlib
 Pillow          # Required by matplotlib and napari
