@@ -27,7 +27,6 @@ typer
 fastapi
 uvicorn
 coverage
-pytest
 ruff
 python-multipart
 httpx
