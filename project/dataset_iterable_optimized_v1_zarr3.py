@@ -433,21 +433,28 @@ class ZarrIterableDataset(IterableDataset):
 
 
 def test_plot(train_batch):
-    size_hr = train_batch['H'].shape[-1]
-    size_lr = train_batch['L'].shape[-1]
+    size_hr = min(train_batch['H'].shape[2:])
+    size_lr = min(train_batch['L'].shape[2:])
     batch_size = len(train_batch['H'])
     plt.figure(figsize=(2*batch_size, 8))
     c = 0
     for i in range(batch_size):
         plt.subplot(2, batch_size, 1 + c)
-        plt.imshow(train_batch['H'][i, 0, :, :, size_hr//2])
+        if len(train_batch['H'].shape) == 4:
+            plt.imshow(train_batch['H'][i, 0, ...])
+        else:
+            plt.imshow(train_batch['H'][i, 0, size_hr//2, ...])
         plt.axis("off")
         plt.subplot(2, batch_size, 2 + c)
-        plt.imshow(train_batch['L'][i, 0, :, :, size_lr//2])
+        if len(train_batch['H'].shape) == 4:
+            plt.imshow(train_batch['L'][i, 0, ...])
+        else:
+            plt.imshow(train_batch['L'][i, 0, size_lr//2, ...])
         plt.axis("off")
         c += 2
     plt.tight_layout()
     plt.show()
+
 
 def main():
 
